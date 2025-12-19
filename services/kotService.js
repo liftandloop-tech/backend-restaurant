@@ -1,0 +1,401 @@
+import KOT from "../models/KOT.js";
+import Order from "../models/order.js";
+import Table from "../models/table.js";
+import { AppError } from "../utils/errorHandler.js";
+
+// const KOT = require('../models/order.js')
+// const Order = require('../models/order.js')
+// const {AppError} = require('../utils/errorHandler.js')
+
+
+
+
+
+        export const createKOT = async (orderId,station,userId,userRole,restaurantId) => {
+          //validate that active staff can create kots
+          const Staff = (await import('../models/staff.js')).default;
+          const User = (await import('../models/user.js')).default
+
+          let staffMember = null;
+          let userMember = null;
+
+          //try to find staff first
+          staffMember = await Staff.findById(userId);
+          if(!staffMember){
+            userMember = await User.findById(userId)
+              if(!userMember){
+                throw new AppError(`User not found with ID: ${userId}`,404)
+              }
+              // for users (owner/admin/manager), they can always create KOTs
+
+          }else{
+            // for staff mamber check if active
+            if(!staffMember.isActive){
+              throw new AppError(`Staff member {staffMember.fullName}is not active.Please contact your  manager.`,403);
+            }
+          }
+          
+          // validate role permission for creating kots(only cashier and above)
+          const allowedRoles = ['Cashier','Manager','Admin','Owner']
+          if(!allowedRoles.includes(userRole)){
+            throw new AppError("Only cashier and above can create KOTs",403)
+          }
+        
+  const order = await Order.findById(orderId);
+
+  if (!order) {
+    throw new AppError("Order not found", 404);
+  }
+  
+  if (!order.items || order.items.length === 0) {
+    throw new AppError("Order has no items", 400);
+  }
+  
+  // Map all order items with complete data for KOT
+  const items = order.items.map(item => ({
+    name: item.name || '',
+    qty: item.qty || 0,
+    specialInstructions: item.specialInstructions || undefined
+  })).filter(item => item.name && item.qty > 0);
+  
+  if (items.length === 0) {
+    throw new AppError("No valid items found in order", 400);
+  }
+  
+  // Generate KOT number before creating KOT
+  // This ensures kotNumber is available before Mongoose validation
+  const count = await KOT.countDocuments();
+  const stationCode = station.substring(0, 3).toUpperCase();
+  const kotNumber = `KOT-${stationCode}-${Date.now()}-${String(count + 1).padStart(4, '0')}`;
+  
+  const kot = await KOT.create({
+    kotNumber,
+    orderId,
+    station,
+    items,
+    restaurantId: restaurantId, // Get restaurantId from user
+    status: 'pending'
+  });
+  
+  return await KOT.findById(kot._id).populate('orderId');
+};
+
+
+
+export const  getKOTs = async (filters = {}, userRole) => {
+  // validate that kitchen staff, cashiers, waiters, and managers can view kots
+  const allowedRoles = ['Kitchen','Cashier','Waiter','Manager','Admin','Owner'];
+  if(!allowedRoles.includes(userRole)){
+    throw new AppError("You dont have permission to view KOTs",403)
+  }
+
+  const query = {};
+
+  if (filters.station) query.station = filters.station;
+  if (filters.status) query.status = filters.status;
+  if (filters.orderId) query.orderId = filters.orderId;
+if (filters.restaurantId) query.restaurantId = filters.restaurantId
+  const kots = await KOT.find(query)
+    .populate({
+      path: 'orderId',
+      select: 'orderNumber tableNumber items customerId status source createdAt',
+      populate: {
+        path: 'customerId',
+        select: 'name phone email'
+      }
+    })
+    .populate('assignedTo', 'fullName email')
+    .populate('printedBy', 'fullName role')
+    .sort({ createdAt: -1 })
+    .lean();
+// new for w
+  // Add table status information to each KOT
+  const kotsWithTableStatus = await Promise.all(kots.map(async (kot) => {
+    if (kot.orderId && kot.orderId.tableNumber) {
+      const table = await Table.findOne({ tableNumber: kot.orderId.tableNumber }).lean();
+      if (table) {
+        kot.tableStatus = table.status;
+        kot.tableCapacity = table.capacity;
+        kot.tableLocation = table.location;
+      }
+    }
+    return kot;
+  }));
+
+  return kotsWithTableStatus;
+};
+// end
+export const getKOTById = async (kotId) => {
+  const kot = await KOT.findById(kotId)
+    .populate({          // new
+      path: 'orderId',
+      select: 'orderNumber tableNumber items customerId status',
+      populate: {
+        path: 'customerId',
+        select: 'name phone email'
+      }
+    })
+    .populate('assignedTo', 'name email');
+  
+  if (!kot) {
+    throw new AppError("KOT not found", 404);
+  }
+// new for w
+  // Add table status information
+  if (kot.orderId && kot.orderId.tableNumber) {
+    const table = await Table.findOne({ tableNumber: kot.orderId.tableNumber }).lean();
+    if (table) {
+      kot.tableStatus = table.status;
+      kot.tableCapacity = table.capacity;
+      kot.tableLocation = table.location;
+    }
+  }
+  
+  return kot;
+};
+//end
+//new for w
+
+export const updateKOTStatus = async (kotId,status ,userId,userRole,restaurantId) => {
+  // validate role permission for updating kot status - allow all active staff based on their roles
+  const allowedRoles = ['Kitchen','Waiter','Cashier','Manager','Admin','Owner'];
+  if(!allowedRoles.includes(userRole)){
+    throw new AppError("You dont have permission to update kot status",403)
+  }
+
+  // Role-based status update validation - each role can update specific statuses
+  const allowedStatuses = {
+    'Kitchen': ['preparing', 'ready'], // Kitchen can prepare and mark ready
+    'Waiter': ['sent'], // Waiter can mark as sent after delivery
+    'Cashier': ['pending', 'preparing', 'ready', 'sent'], // Cashier can update all statuses
+    'Manager': ['pending', 'preparing', 'ready', 'sent'], // Manager can update all statuses
+    'Admin': ['pending', 'preparing', 'ready', 'sent'], // Admin can update all statuses
+    'Owner': ['pending', 'preparing', 'ready', 'sent'] // Owner can update all statuses
+  };
+  //end
+  const userAllowedStatuses = allowedStatuses[userRole] || [];
+  if(!userAllowedStatuses.includes(status)){
+    throw new AppError(`Your role (${userRole}) cannot update KOTs to '${status}' status. Allowed statuses: ${userAllowedStatuses.join(', ')}`,403)
+  }
+
+  // Check if user is active staff (for Staff model) or valid user (for User model)
+  const Staff = (await import('../models/staff.js')).default;
+  const User = (await import('../models/user.js')).default;
+  
+  let staffMember = await Staff.findById(userId);
+  let userMember = null;
+  
+  if(!staffMember) {
+    // Check if it's a User (Admin, Owner, Manager)
+    userMember = await User.findById(userId);
+    if(!userMember) {
+      throw new AppError("User not found", 404);
+    }
+    // Users (Manager, Admin, Owner) can always update KOT status
+  } else {
+    // For staff members (Kitchen, Waiter, Cashier), check if active
+    if(!staffMember.isActive) {
+      throw new AppError("Only active staff can update KOT status", 403);
+    }
+  }
+
+  const kot = await KOT.findById(kotId);
+
+  if (!kot) {
+    throw new AppError("KOT not found", 404);
+  }
+
+  // Ensure the KOT belongs to the user's restaurant
+  if (kot.restaurantId.toString() !== restaurantId.toString()) {
+    throw new AppError("You can only update KOTs from your restaurant", 403);
+  }
+  
+  kot.status = status;
+  
+  if (status === 'preparing' && !kot.startedAt) {
+    kot.startedAt = new Date();
+    kot.assignedTo = userId;
+  }
+  
+  if (status === 'ready') {
+    kot.completedAt = new Date();
+  }
+  
+  // Note: KOT status 'sent' should not automatically update order status to 'served'
+  // Waiters should manually mark orders as 'served' after delivery
+  // KOTs should remain visible until bill is printed (order becomes 'completed')
+  
+  await kot.save();
+  
+  return await KOT.findById(kot._id).populate('orderId').populate('assignedTo', 'name email');
+};
+//new written
+export const markKOTPrinted = async (kotId, userId, userRole, restaurantId) => {
+  // Validate user permissions
+  const allowedRoles = ['Cashier', 'Kitchen', 'Manager', 'Admin', 'Owner'];
+  if (!allowedRoles.includes(userRole)) {
+    throw new AppError("Only authorized staff can mark KOTs as printed", 403);
+  }
+
+  // First check if KOT exists and belongs to user's restaurant
+  const existingKot = await KOT.findById(kotId);
+  if (!existingKot) {
+    throw new AppError("KOT not found", 404);
+  }
+
+  // Ensure the KOT belongs to the user's restaurant
+  if (existingKot.restaurantId.toString() !== restaurantId.toString()) {
+    throw new AppError("You can only update KOTs from your restaurant", 403);
+  }
+
+  const kot = await KOT.findByIdAndUpdate(
+    kotId,
+    {
+      isPrinted: true,
+      printedAt: new Date(),
+      printedBy: userId
+    },
+    { new: true }
+  )
+    .populate('orderId')
+    .populate('printedBy', 'fullName role');
+
+  if (!kot) {
+    throw new AppError("KOT not found", 404);
+  }
+
+  return kot;
+};
+//end
+export const getKOTsByStatus = async (status, userRole) => {
+  // Validate user permissions
+  const allowedRoles = ['Kitchen', 'Cashier', 'Manager', 'Admin', 'Owner'];
+  if (!allowedRoles.includes(userRole)) {
+    throw new AppError("You don't have permission to view KOTs", 403);
+  }
+
+  // Define status-based queries
+  let query = { status };
+
+  // Role-based filtering
+  if (userRole === 'Kitchen') {
+    // Kitchen can only see their assigned KOTs or pending ones
+    query = {
+      ...query,
+      $or: [
+        { assignedTo: { $exists: true } },
+        { status: 'pending' }
+      ]
+    };
+  }
+//new for w
+  const kots = await KOT.find(query)
+    .populate({
+      path: 'orderId',
+      select: 'orderNumber tableNumber items customerId status',
+      populate: {
+        path: 'customerId',
+        select: 'name phone'
+      }
+    })
+    
+    .populate('assignedTo', 'fullName')
+    .populate('printedBy', 'fullName')
+    .sort({ createdAt: -1 })
+    .lean();
+
+  // Add table status information to each KOT
+  const kotsWithTableStatus = await Promise.all(kots.map(async (kot) => {
+    if (kot.orderId && kot.orderId.tableNumber) {
+      const table = await Table.findOne({ tableNumber: kot.orderId.tableNumber }).lean();
+      if (table) {
+        kot.tableStatus = table.status;
+        kot.tableCapacity = table.capacity;
+        kot.tableLocation = table.location;
+      }
+    }
+    return kot;
+  }));
+
+  return kotsWithTableStatus;
+};
+// end
+export const getKOTsForOrder = async (orderId, userRole) => {
+  // Validate user permissions
+  const allowedRoles = ['Waiter', 'Cashier', 'Kitchen', 'Manager', 'Admin', 'Owner'];
+  if (!allowedRoles.includes(userRole)) {
+    throw new AppError("You don't have permission to view KOTs", 403);
+  }
+//new for w
+  const kots = await KOT.find({ orderId })
+    .populate({
+      path: 'orderId',
+      select: 'orderNumber tableNumber items customerId status',
+      populate: {
+        path: 'customerId',
+        select: 'name phone'
+      }
+    })
+    // end
+    .populate('assignedTo', 'fullName')
+    .populate('printedBy', 'fullName')
+    .sort({ createdAt: -1 })
+    .lean();
+//new for w
+  // Add table status information to each KOT
+  const kotsWithTableStatus = await Promise.all(kots.map(async (kot) => {
+    if (kot.orderId && kot.orderId.tableNumber) {
+      const table = await Table.findOne({ tableNumber: kot.orderId.tableNumber }).lean();
+      if (table) {
+        kot.tableStatus = table.status;
+        kot.tableCapacity = table.capacity;
+        kot.tableLocation = table.location;
+      }
+    }
+    return kot;
+  }));
+
+  return kotsWithTableStatus;
+};
+
+export const updateKOTItems = async (kotId, items, userId, userRole,restaurantId) => {
+  // Only kitchen staff can update KOT items
+  const allowedRoles = ['Kitchen', 'Manager', 'Admin', 'Owner'];
+  if (!allowedRoles.includes(userRole)) {
+    throw new AppError("Only kitchen staff can update KOT items", 403);
+  }
+
+  const kot = await KOT.findById(kotId);
+  if (!kot) {
+    throw new AppError("KOT not found", 404);
+  }
+
+  
+  // Ensure the kot belongs to the user's restaurant
+  if(kot.restaurantId.toString() !== restaurantId.toString()){
+    throw new AppError("You can only update kts from your restaurant",403)
+  }
+
+  // Update items with preparation status
+  kot.items = items.map(item => ({
+    ...item,
+    preparedAt: item.isPrepared ? new Date() : undefined,
+    preparedBy: item.isPrepared ? userId : undefined
+  }));
+
+  // Check if all items are prepared
+  const allPrepared = kot.items.every(item => item.isPrepared);
+  if (allPrepared && kot.status !== 'ready') {
+    kot.status = 'ready';
+    kot.completedAt = new Date();
+  } else if (!allPrepared && kot.status === 'ready') {
+    kot.status = 'preparing';
+  }
+
+  await kot.save();
+
+  return await KOT.findById(kot._id)
+    .populate('orderId')
+    .populate('assignedTo', 'fullName')
+    .populate('printedBy', 'fullName');
+};
