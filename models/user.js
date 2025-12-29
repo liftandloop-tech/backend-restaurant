@@ -38,7 +38,7 @@ const userSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: ['Owner', 'Admin', 'Manager', 'Cashier', 'Waiter', 'Kitchen', 'Bar', 'Delivery'],
-    default: 'Waiter',
+    default: 'Admin',
     required: true
   },
   restaurantId: {
