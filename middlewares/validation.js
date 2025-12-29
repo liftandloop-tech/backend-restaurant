@@ -1,8 +1,8 @@
 import Joi from "joi";
 //const Joi=require('joi');
- import { Schema } from 'mongoose';
+import { Schema } from 'mongoose';
 
- export const validate = (schema) => {
+export const validate = (schema) => {
   return (req, res, next) => {
     const { error, value } = schema.validate(req.body, {
       abortEarly: false,
@@ -41,7 +41,7 @@ export const schemas = {
     password: Joi.string().min(8).pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
       .message('Password must contain at least one uppercase letter, one lowercase letter, and one number')
       .required(),
-    role: Joi.string().valid('Owner', 'Admin', 'Manager', 'Cashier', 'Waiter', 'Kitchen').default('Cashier')
+    role: Joi.string().valid('Owner', 'Admin', 'Manager', 'Cashier', 'Waiter', 'Kitchen').default('Admin')
   }),
 
   login: Joi.object({
@@ -80,7 +80,7 @@ export const schemas = {
     ).min(1).required(),
     notes: Joi.string().max(500).optional(),
     source: Joi.string().valid('dine-in', 'takeaway', 'online', 'phone').default('dine-in'),
-    
+
     waiterId: Joi.string().hex().length(24).optional(),
     //new for w
     customerId: Joi.string().hex().length(24).optional(),
@@ -90,15 +90,15 @@ export const schemas = {
     deliveryAddress: Joi.string().max(500).optional(),
     deliveryPhone: Joi.string().max(15).optional(),
     deliveryTime: Joi.string().max(50).optional(),
-   // end
+    // end
     discount: Joi.object({
       type: Joi.string().valid('percentage', 'flat').required(),
       value: Joi.number().positive().required(),
       reason: Joi.string().max(200).optional()
     }).optional(),
-}).optional(),
-    updateOrder: Joi.object({
-    status: Joi.string().valid('pending', 'confirmed', 'preparing', 'ready', 'served','completed', 'cancelled').optional(),
+  }).optional(),
+  updateOrder: Joi.object({
+    status: Joi.string().valid('pending', 'confirmed', 'preparing', 'ready', 'served', 'completed', 'cancelled').optional(),
     items: Joi.array().items(
       Joi.object({
         name: Joi.string().required(),
@@ -121,7 +121,7 @@ export const schemas = {
     gatewayResponse: Joi.object().optional(),
     idempotencyKey: Joi.string().uuid().required()
   }),
-//new
+  //new
   inventoryItem: Joi.object({
     name: Joi.string().required().trim().max(100),
     category: Joi.string().optional(),
@@ -159,80 +159,80 @@ export const schemas = {
   }),
 
 
-  
-//new staff validation
-// staffRegistration: Joi.object({
-//     name: Joi.string().min(2).max(50).required(),
-//     email: Joi.string().email().required(),
-//     phone: Joi.string().min(10).max(15).required(),
-//     role: Joi.string()
-//       .valid("Manager", "Cashier", "Waiter", "Kitchen", "Cleaner")
-//       .required(),
-//     password: Joi.string().min(8).required(),
-//   }),
 
-  staffRegistration:Joi.object({
-    fullName:Joi.string().min(2).max(50).required(),
-     email:Joi.string().email().optional().allow('',null),
-     phoneNumber:Joi.string().min(10).max(15).required(),
-     username:Joi.string().min(3).max(30).required(),
-     role:Joi.string()
-     .valid("Manager","Cashier","Waiter","Kitchen","Admin")
-     .required(),
-     password:Joi.string().min(6).required(),
-     profilePicture:Joi.string().optional().allow('',null),
-     dateOfJoining:Joi.date().optional(),
-     gender:Joi.string().valid("Male","Female","Other").optional().allow('',null),
-     branch:Joi.string().optional().allow('',null),
-     supervisor:Joi.string().optional().allow('',null),
-     shiftStart:Joi.string().optional().allow('',null),
-     shiftEnd:Joi.string().optional().allow('',null),
-     autoAddToAttendance:Joi.boolean().optional(),
-     baseSalary:Joi.number().min(0).optional(),
-     paymentMode:Joi.string().valid("Cash","Bank Transfer","Cheque","UPI").optional().allow(''),
-     tipCommissionEligible:Joi.boolean().optional(),
-     bankName:Joi.string().optional().allow('',null),
-     ifscCode:Joi.string().optional().allow('',null),
-     accountNumber:Joi.string().optional().allow('',null),
-     internalNotes:Joi.string().optional().allow('',null),
+  //new staff validation
+  // staffRegistration: Joi.object({
+  //     name: Joi.string().min(2).max(50).required(),
+  //     email: Joi.string().email().required(),
+  //     phone: Joi.string().min(10).max(15).required(),
+  //     role: Joi.string()
+  //       .valid("Manager", "Cashier", "Waiter", "Kitchen", "Cleaner")
+  //       .required(),
+  //     password: Joi.string().min(8).required(),
+  //   }),
+
+  staffRegistration: Joi.object({
+    fullName: Joi.string().min(2).max(50).required(),
+    email: Joi.string().email().optional().allow('', null),
+    phoneNumber: Joi.string().min(10).max(15).required(),
+    username: Joi.string().min(3).max(30).required(),
+    role: Joi.string()
+      .valid("Manager", "Cashier", "Waiter", "Kitchen", "Admin")
+      .required(),
+    password: Joi.string().min(6).required(),
+    profilePicture: Joi.string().optional().allow('', null),
+    dateOfJoining: Joi.date().optional(),
+    gender: Joi.string().valid("Male", "Female", "Other").optional().allow('', null),
+    branch: Joi.string().optional().allow('', null),
+    supervisor: Joi.string().optional().allow('', null),
+    shiftStart: Joi.string().optional().allow('', null),
+    shiftEnd: Joi.string().optional().allow('', null),
+    autoAddToAttendance: Joi.boolean().optional(),
+    baseSalary: Joi.number().min(0).optional(),
+    paymentMode: Joi.string().valid("Cash", "Bank Transfer", "Cheque", "UPI").optional().allow(''),
+    tipCommissionEligible: Joi.boolean().optional(),
+    bankName: Joi.string().optional().allow('', null),
+    ifscCode: Joi.string().optional().allow('', null),
+    accountNumber: Joi.string().optional().allow('', null),
+    internalNotes: Joi.string().optional().allow('', null),
   }),
 
-    staffUpdate:Joi.object({
-    fullName:Joi.string().min(2).max(50).optional(),
-     email:Joi.string().email().optional().allow(''),
-     phoneNumber:Joi.string().min(10).max(15).optional(),
-     username:Joi.string().min(3).max(30).optional(),
-     role:Joi.string()
-     .valid("Manager","Cashier","Waiter","Kitchen","Admin")
-     .optional(),
-     profilePicture:Joi.string().optional().allow(''),
-     dateOfJoining:Joi.date().optional(),
-     gender:Joi.string().valid("Male","Female","Other").optional(),
-     branch:Joi.string().optional().allow(''),
-     supervisor:Joi.string().optional().allow(''),
-     shiftStart:Joi.string().optional().allow(''),
-     shiftEnd:Joi.string().optional().allow(''),
-     autoAddToAttendance:Joi.boolean().optional(),
-     baseSalary:Joi.number().min(0).optional(),
-     paymentMode:Joi.string().valid("Cash","Bank Transfer","Cheque","UPI").optional().allow(''),
-     tipCommissionEligible:Joi.boolean().optional(),
-     bankName:Joi.string().optional().allow(''),
-     ifscCode:Joi.string().optional().allow(''),
-     accountNumber:Joi.string().optional().allow(''),
-     internalNotes:Joi.string().optional().allow(''),
-     isActive:Joi.boolean().optional(),
+  staffUpdate: Joi.object({
+    fullName: Joi.string().min(2).max(50).optional(),
+    email: Joi.string().email().optional().allow(''),
+    phoneNumber: Joi.string().min(10).max(15).optional(),
+    username: Joi.string().min(3).max(30).optional(),
+    role: Joi.string()
+      .valid("Manager", "Cashier", "Waiter", "Kitchen", "Admin")
+      .optional(),
+    profilePicture: Joi.string().optional().allow(''),
+    dateOfJoining: Joi.date().optional(),
+    gender: Joi.string().valid("Male", "Female", "Other").optional(),
+    branch: Joi.string().optional().allow(''),
+    supervisor: Joi.string().optional().allow(''),
+    shiftStart: Joi.string().optional().allow(''),
+    shiftEnd: Joi.string().optional().allow(''),
+    autoAddToAttendance: Joi.boolean().optional(),
+    baseSalary: Joi.number().min(0).optional(),
+    paymentMode: Joi.string().valid("Cash", "Bank Transfer", "Cheque", "UPI").optional().allow(''),
+    tipCommissionEligible: Joi.boolean().optional(),
+    bankName: Joi.string().optional().allow(''),
+    ifscCode: Joi.string().optional().allow(''),
+    accountNumber: Joi.string().optional().allow(''),
+    internalNotes: Joi.string().optional().allow(''),
+    isActive: Joi.boolean().optional(),
   }),
-  passwordChange:Joi.object({
-   oldPassword:Joi.string().required(),
-   newPassword:Joi.string()
-   .min(8)
+  passwordChange: Joi.object({
+    oldPassword: Joi.string().required(),
+    newPassword: Joi.string()
+      .min(8)
       .pattern(/^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)/)
       .message(
         "New password must contain uppercase, lowercase, and a number"
       )
-   .required()
+      .required()
   }),
-// new for w
+  // new for w
   // Restaurant validation schemas
   restaurant: Joi.object({
     name: Joi.string().min(2).max(100).required(),
