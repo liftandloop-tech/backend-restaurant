@@ -2,42 +2,80 @@ import Order from "../models/order.js";
 import Bill from "../models/bill.js";
 import Payment from "../models/payment.js";
 import User from "../models/user.js";
-
-// const Bill = require('../models/bill.js')
-// const Order = require('../models/order.js')
-// const Payment = require('../models/payment.js')
+//new
+import KOT from "../models/KOT.js";
+import Table from "../models/table.js";
 
 /**
- * Get today's dashboard summary
+ * Get today's dashboard summary with yesterday's comparison
  */
 export const getTodaySummary = async () => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
+//new for w
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
 
-  // Today's orders
-  const ordersToday = await Order.countDocuments({
-    createdAt: { $gte: today, $lt: tomorrow }
-  });
+  // Today's metrics helper function
+  const getMetrics = async (startDate, endDate) => {
+    // Orders
+    const orders = await Order.countDocuments({
+      createdAt: { $gte: startDate, $lt: endDate }
+    });
 
-  // Today's bills
-  const billsToday = await Bill.find({
-    createdAt: { $gte: today, $lt: tomorrow },
-    paid: true
-  });
+    // Bills
+    const bills = await Bill.find({
+      createdAt: { $gte: startDate, $lt: endDate },
+      paid: true
+    });
 
-  const totalRevenue = billsToday.reduce((sum, bill) => sum + bill.total, 0);
-  const totalBills = billsToday.length;
-  const averageOrderValue = totalBills > 0 ? totalRevenue / totalBills : 0;
+    const revenue = bills.reduce((sum, bill) => sum + bill.total, 0);
+    const billCount = bills.length;
+    const avgOrderValue = billCount > 0 ? revenue / billCount : 0;
 
-  // Payment methods breakdown
-  const paymentMethods = billsToday.reduce((acc, bill) => {
-    acc[bill.paymentMethod] = (acc[bill.paymentMethod] || 0) + bill.total;
-    return acc;
-  }, {});
+    // KOT Prep Time
+    const completedKots = await KOT.find({
+      completedAt: { $gte: startDate, $lt: endDate },
+      startedAt: { $exists: true }
+    });
 
-  // Order status breakdown
+    let totalPrepTime = 0;
+    completedKots.forEach(kot => {
+      const diff = new Date(kot.completedAt) - new Date(kot.startedAt);
+      totalPrepTime += diff / (1000 * 60);
+    });
+    const avgKotPrepTime = completedKots.length > 0 ? totalPrepTime / completedKots.length : 0;
+
+    // Dining Time
+    const completedDineIn = await Order.find({
+      createdAt: { $gte: startDate, $lt: endDate },
+      status: 'completed',
+      source: 'dine-in'
+    });
+
+    let totalDiningTime = 0;
+    completedDineIn.forEach(order => {
+      const diff = new Date(order.updatedAt) - new Date(order.createdAt);
+      totalDiningTime += diff / (1000 * 60);
+    });
+    const avgDiningTime = completedDineIn.length > 0 ? totalDiningTime / completedDineIn.length : 0;
+
+    return { orders, revenue, avgOrderValue, avgKotPrepTime, avgDiningTime, billCount };
+  };
+
+  const todayMetrics = await getMetrics(today, tomorrow);
+  const yesterdayMetrics = await getMetrics(yesterday, today);
+
+  // Calculate trends
+  const calculateChange = (current, previous) => {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return Math.round(((current - previous) / previous) * 1000) / 10;
+  };
+
+  // Order status breakdown (Today only)
+  //end 
   const orderStatuses = await Order.aggregate([
     {
       $match: {
@@ -56,17 +94,46 @@ export const getTodaySummary = async () => {
   orderStatuses.forEach(item => {
     statusBreakdown[item._id] = item.count;
   });
+//new for w
+  // Low stock items
+  const lowStockItems = await KOT.find({}).then(async () => {
+    try {
+      const inventoryService = await import('../services/inventoryService.js');
+      return await inventoryService.getLowStockItems();
+    } catch (e) {
+      return [];
+    }
+  });
+
+  // Payment methods breakdown (Today)
+  const billsToday = await Bill.find({
+    createdAt: { $gte: today, $lt: tomorrow },
+    paid: true
+  });
+  const paymentMethods = billsToday.reduce((acc, bill) => {
+    acc[bill.paymentMethod] = (acc[bill.paymentMethod] || 0) + bill.total;
+    return acc;
+  }, {});
 
   return {
-    orders: ordersToday,
-    bills: totalBills,
-    revenue: totalRevenue,
-    averageOrderValue: Math.round(averageOrderValue * 100) / 100,
+    orders: todayMetrics.orders,
+    bills: todayMetrics.billCount,
+    revenue: todayMetrics.revenue,
+    averageOrderValue: Math.round(todayMetrics.avgOrderValue * 100) / 100,
+    avgKotPrepTime: Math.round(todayMetrics.avgKotPrepTime * 10) / 10,
+    avgDiningTime: Math.round(todayMetrics.avgDiningTime * 10) / 10,
+    trends: {
+      revenue: calculateChange(todayMetrics.revenue, yesterdayMetrics.revenue),
+      averageOrderValue: calculateChange(todayMetrics.avgOrderValue, yesterdayMetrics.avgOrderValue),
+      avgKotPrepTime: calculateChange(todayMetrics.avgKotPrepTime, yesterdayMetrics.avgKotPrepTime),
+      avgDiningTime: calculateChange(todayMetrics.avgDiningTime, yesterdayMetrics.avgDiningTime)
+    },
     paymentMethods,
-    orderStatuses: statusBreakdown
+    orderStatuses: statusBreakdown,
+    lowStockItems: lowStockItems.slice(0, 5) // Top 5 critical items
   };
 };
-
+//end 
 /**
  * Get sales statistics for a date range
  */
@@ -340,8 +407,8 @@ export const getPaymentMethodBreakdown = async (fromDate, toDate) => {
 
   return breakdown.map(item => ({
     ...item,
-    percentage: totalRevenue > 0 
-      ? Math.round((item.total / totalRevenue) * 100 * 100) / 100 
+    percentage: totalRevenue > 0
+      ? Math.round((item.total / totalRevenue) * 100 * 100) / 100
       : 0
   }));
 };

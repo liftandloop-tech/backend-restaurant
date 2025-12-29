@@ -37,7 +37,7 @@ import customerRoutes from "./routes/customer.routes.js";
 import reportRoutes from "./routes/report.routes.js";
 import staffRoutes from "./routes/staff.routes.js";
 import restaurantRoutes from "./routes/restaurant.routes.js";
-
+import feedbackRoutes from "./routes/feedback.routes.js"
 
 // const userRoutes = require('./routes/user.routes.js')
 // const orderRoutes = require('./routes/order.routes.js')
@@ -67,18 +67,18 @@ const app = express();
 const getAllowedOrigins = () => {
   // Default allowed origins for development
   const defaultOrigins = ['http://localhost:5174', 'http://localhost:5173', 'http://localhost:3000'];
-  
+
   // If CORS_ORIGIN is '*', return true (allow all)
   if (ENV.CORS_ORIGIN === '*') {
     return true;
   }
-  
+
   // If CORS_ORIGIN is set, split and combine with defaults
   if (ENV.CORS_ORIGIN) {
     const envOrigins = ENV.CORS_ORIGIN.split(',').map(o => o.trim()).filter(o => o);
     return [...new Set([...defaultOrigins, ...envOrigins])]; // Remove duplicates
   }
-  
+
   // Default to localhost origins
   return defaultOrigins;
 };
@@ -101,7 +101,7 @@ app.use((req, res, next) => {
   if (req.method === 'OPTIONS') {
     const origin = req.headers.origin;
     const allowedOrigins = getAllowedOrigins();
-    
+
     // Check if origin is allowed
     if (allowedOrigins === true || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
       res.header('Access-Control-Allow-Origin', origin || '*');
@@ -141,8 +141,8 @@ app.use(idempotencyMiddleware);
 
 // Health check
 app.get('/health', (req, res) => {
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     status: 'ok',
     timestamp: new Date().toISOString(),
     requestId: req.id
@@ -164,7 +164,7 @@ app.use("/api/v1/customers", customerRoutes);
 app.use("/api/v1/reports", reportRoutes);
 app.use("/api/v1/staff", staffRoutes);
 app.use("/api/v1/restaurants", restaurantRoutes);
-
+app.use("/api/v1/feedback",feedbackRoutes);
 
 // Webhook routes (before error handler, needs raw body)
 app.use("/api/webhooks", webhookRoutes);

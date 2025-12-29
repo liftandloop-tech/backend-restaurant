@@ -10,18 +10,18 @@ const orderSchema = new mongoose.Schema({
   },
   tableNumber: {
     type: Number,
- required: false,
+    required: false,
     min: 1,
     validate: {
       validator: function(value){
         //if sourec is dien in or takeaway, table number is required
         if(this.source === 'dine-in' || this.source === 'takeaway'){
             return value !== null && value  && value >= 1;
-      }
-      //phone and online orders can have null table number
-      return true;
-    },
-    message: 'Table number is required for dine-in and takeAway orders'
+        }
+        //phone and online orders can have null table number
+        return true;
+      },
+      message: 'Table number is required for dine-in and takeAway orders'
     }
   },
   source: {
@@ -30,7 +30,12 @@ const orderSchema = new mongoose.Schema({
     default: 'dine-in',
     index: true,
   },
-  items: [{
+    items:[{
+      menuItemId: {
+         type: mongoose.Schema.Types.ObjectId,
+         ref: 'MenuItem'
+      },
+    
     name: {
       type: String,
       required: true,
@@ -84,9 +89,9 @@ const orderSchema = new mongoose.Schema({
   },
 
      cashierId:{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Staff',
-      required: false // set when cashier confirms order
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Staff',
+    required: false // set when cashier confirms order
   },
 
   customerId:{

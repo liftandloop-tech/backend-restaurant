@@ -74,7 +74,7 @@ export const deleteCustomer = async (id) => {
     console.error('Error updating restaurant stats after customer deletion:', error);
   }
 
- // end
+  // end
   return customer;
 };
 

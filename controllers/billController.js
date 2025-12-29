@@ -89,17 +89,18 @@ export const printBill = async (req, res, next) => {
 
     // Print the bill (this will log the print job in development)
     const printResult = await printer.printBill(bill);
-// new for w
-    // Remove KOTs associated with this order after bill is printed
-    try {
-      const KOT = (await import("../models/KOT.js")).default;
-      await KOT.deleteMany({ orderId: bill.orderId._id });
-      console.log(`Removed ${await KOT.countDocuments({ orderId: bill.orderId._id })} KOTs for order ${bill.orderId.orderNumber}`);
-    } catch (kotError) {
-      console.error('Failed to remove KOTs after bill printing:', kotError);
-      // Don't fail the bill printing if KOT removal fails
-    }
-// end
+
+    
+//Remove KOTs associated with this order after bill is printed
+try{
+  const KOT =(await import("./models/KOT.js")).default;
+  await KOT.deleteMany({orderId:bill.orderId._id});
+  console.log(`Removed ${await KOT.countDocuments({orderId: bill.orderId._id})} KOTs for order ${bill.orderId.orderNumber}`);
+
+}catch(kotError){
+  console.error('Failed to remove KOTs after bill printing:',kotError);
+  //Dont fail bill printing if KOT removal fails 
+}
     sendSuccess(res, "Bill printed successfully", {
       billId: bill._id,
       billNumber: bill.billNumber,

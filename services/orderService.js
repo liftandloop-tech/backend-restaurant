@@ -83,7 +83,7 @@ export const createOrder = async (orderData, userId, userRole) => {
   }
 
   const subtotalAfterDiscount = subtotal - discountAmount;
-  const tax = subtotalAfterDiscount * 0.18; // 18% GST
+  const tax = subtotalAfterDiscount * 0.05; // 5% GST (2.5% CGST + 2.5% SGST)
   const total = subtotalAfterDiscount + tax;
 
   // Generate order number before creating order
@@ -237,7 +237,7 @@ export const updateOrder = async (orderId, updateData, userId) => {
   // If updating items, recalculate totals
   if (updateData.items) {
     const subtotal = updateData.items.reduce((sum, item) => sum + (item.price * item.qty), 0);
-    const tax = subtotal * 0.18;
+    const tax = subtotal * 0.05;
     updateData.subtotal = subtotal;
     updateData.tax = tax;
     updateData.total = subtotal + tax;

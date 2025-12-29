@@ -234,49 +234,85 @@ export const getActiveStaffByRoleController = async (req, res, next) => {
     }
 };
 // new for w
-/**
- * get all active staff grouped by role
- * GET /api/v1/staff/active/all
- */
-export const getAllActiveStaffController = async (req, res, next) => {
-    try {
-        const Staff = (await import('../models/staff.js')).default;
-        const roles = ['Waiter', 'Kitchen', 'Cashier', 'Manager', 'Admin', 'Owner'];
 
-        const activeStaffByRole = {};
+// get all active staff grouped by role
+ 
 
-        for (const role of roles) {
-            const staff = await Staff.find({
-                role: role,
-                isActive: true
-            }).select('fullName email phoneNumber username')
-                .sort({ fullName: 1 });
+// export const getAllActiveStaffController = async (req, res, next) => {
+//     try {
+//         const Staff = (await import('../models/staff.js')).default;
+//         const roles = ['Waiter', 'Kitchen', 'Cashier', 'Manager', 'Admin', 'Owner'];
 
-            activeStaffByRole[role.toLowerCase()] = staff.map(s => ({
-                id: s._id,
-                name: s.fullName,
-                email: s.email,
-                phoneNumber: s.phoneNumber,
-                username: s.username
-            }));
+//         const activeStaffByRole = {};
+
+//         for (const role of roles) {
+//             const staff = await Staff.find({
+//                 role: role,
+//                 isActive: true
+//             }).select('fullName email phoneNumber username')
+//                 .sort({ fullName: 1 });
+                 
+    export const getAllEctiveStaffController = async (req, res, next) => {
+        try {
+            const Staff = (await import('../models/staff.js')).default;
+            const roles = ['Waiter', 'Kitchen', 'Cashier', 'Manager', 'Admin', 'Owner'];
+            
+            
+            const activeStaffByRole = {};
+             for (const role of roles) {
+                const staff = await Staff.find({
+                    role: role,
+                    isActive: true
+              }).select('fullName email phoneNumber username')
+                    .sort({fullName: 1 });
+            
+        
+               activeStaffByRole[role.toLowerCase()] = staff.map(s => ({
+                   id: s._id,
+                   name: s.fullName,
+                   email: s.email,
+                   phoneNumber: s.phoneNumber,
+                   username: s.username
+               }));
+          }
+        //     activeStaffByRole[role.toLowerCase()] = staff.map(s => ({
+        //         id: s._id,
+        //         name: s.fullName,
+        //         email: s.email,
+        //         phoneNumber: s.phoneNumber,
+        //         username: s.username
+        //     }));
+        // }
+
+//         sendSuccess(res, "Active staff by role retrieved successfully", {
+//             roles: activeStaffByRole,
+//             summary: Object.keys(activeStaffByRole).reduce((acc, role) => {
+//                 acc[role] = activeStaffByRole[role].length;
+//                 return acc;
+//             }, {})
+//         });
+//     } catch (error) {
+//         next(error);
+//     }
+// };
+
+          sendSuccess(res, "Active staff by roll retrieved successfully", {
+                roles: activeStaffByRole,
+                summery: Object.keys(activeStaffByRole).reduce((acc, role) => {
+                     acc[role] = activeStaffByRole[role].length;
+                     return acc;
+                }, {})
+            });
+        } catch (error) {
+            next(error);
         }
-
-        sendSuccess(res, "Active staff by role retrieved successfully", {
-            roles: activeStaffByRole,
-            summary: Object.keys(activeStaffByRole).reduce((acc, role) => {
-                acc[role] = activeStaffByRole[role].length;
-                return acc;
-            }, {})
-        });
-    } catch (error) {
-        next(error);
-    }
-};
+    };
+    
 // end
-/**
- * get current user info(for debugging authentication issues)
- * GET /api/v1/staff/me
- */
+
+// get current user info(for debugging authentication issues)
+ 
+ 
 export const getCurrentUserController = async (req, res, next) => {
     try {
 

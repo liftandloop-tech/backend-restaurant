@@ -110,8 +110,8 @@ export class BillPrinter {
     const totalTax = billData.tax || 0;
     const cgst = totalTax / 2;
     const sgst = totalTax / 2;
-    lines.push('CGST (9%):      ₹' + escapeForPrint(cgst.toFixed(2)));
-    lines.push('SGST (9%):      ₹' + escapeForPrint(sgst.toFixed(2)));
+    lines.push('CGST (2.5%):     ₹' + escapeForPrint(cgst.toFixed(2)));
+    lines.push('SGST (2.5%):     ₹' + escapeForPrint(sgst.toFixed(2)));
     lines.push('-'.repeat(40));
     lines.push('TOTAL:         ₹' + escapeForPrint(String((billData.total || 0).toFixed(2))));
     lines.push('-'.repeat(40));

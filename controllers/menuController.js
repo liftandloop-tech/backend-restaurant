@@ -7,25 +7,28 @@ import { sendSuccess, sendError } from "../utils/response.js";
 
 export const getCategories = async (req, res, next) => {
   try {
-    // new for w
-    // Get restaurantId from user
-    const User = (await import('../models/user.js')).default;
-    const Staff = (await import('../models/staff.js')).default;
-    const Restaurant = (await import('../models/restaurant.js')).default;
+            
+    //Get restaurantId from user
+    const User = (await import('../models/user.js')).default
+    const Staff = (await import('../models/staff.js')).default
+    const Restaurant = (await import('../models/restaurant.js')).default
 
     let restaurantId = null;
 
-    // First try to get restaurantId from the user model
+
+    //First try to get restaurantId from the user model
     const user = await User.findById(req.user.userId);
     if (user && user.restaurantId) {
       restaurantId = user.restaurantId;
+
     } else {
-      // If user doesn't have restaurantId, check if they're the owner
-      const restaurant = await Restaurant.findByOwner(req.user.userId);
+      //If user doesn't have restaurant check if they have the Owner
+      const restaurant = await Restaurant.findByOwner(req, user.userId);
       if (restaurant) {
         restaurantId = restaurant._id;
+
       } else {
-        // Try staff lookup as fallback
+        //Try staff lookup as fallback 
         const staff = await Staff.findById(req.user.userId);
         if (staff && staff.restaurantId) {
           restaurantId = staff.restaurantId;
@@ -33,36 +36,45 @@ export const getCategories = async (req, res, next) => {
       }
     }
 
-    const filters = {
-      ...req.query,
-      restaurantId: restaurantId
-    };
+       // clean filters
+       const cleanQuery = {};
+       Object.keys(req.query).forEach(key=> {
+        const val = req.query[key];
+        if (val !== undefined && val !== null && val !== 'undefined' && val !== 'null' && val !== 'all' && val !== ''){
+          cleanQuery[key] = val;
+        }
+       });
+    
+         const filters = {
+          ...cleanQuery,
+          restuarantId: restaurantId
+         };
 
-    const categories = await menuService.getCategories(filters);
-    sendSuccess(res, "Categories retrieved successfully", categories);
-  } catch (error) {
-    next(error);
-  }
-};// end 
+         
+       const categories = await menuService.getCategories(filters);
+       sendSuccess(res, "categories retrieved successfully ", categories);
+     } catch(error) {
+       next(error);
+     } 
+   };
+ 
 
 export const createCategory = async (req, res, next) => {
   try {
-    // new for w
-    // Ensure user has a restaurant (create one if needed)
-    const restaurantService = (await import('../services/restaurantService.js'));
+    
+    // Ensure user has a restaurant (cerate one if needed) 
+    const restaurantService = (await impoert ('../Services/restaurantService.js'));
     const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
-
     const categoryData = {
       ...req.body,
-      restaurantId: restaurant._id
-    };
-
+      restaurantId :restaurant._id
+    }
     const category = await menuService.createCategory(categoryData);
     sendSuccess(res, "Category created successfully", category, 201);
   } catch (error) {
     next(error);
   }
-};// end
+};
 
 export const updateCategory = async (req, res, next) => {
   try {
@@ -84,43 +96,56 @@ export const deleteCategory = async (req, res, next) => {
 
 export const getMenuItems = async (req, res, next) => {
   try {
-    // new for w
-    // Get restaurantId from user
-    const User = (await import('../models/user.js')).default;
-    const Staff = (await import('../models/staff.js')).default;
-    const Restaurant = (await import('../models/restaurant.js')).default;
+         //Get restaurantId from user
+    const User = (await import('../models/user.js')).default
+    const Staff = (await import('../models/staff.js')).default
+    const Restaurant = (await import('../models/restaurant.js')).default
 
     let restaurantId = null;
 
-    // First try to get restaurantId from the user model
+
+    //First try to get restaurantId from the user model
     const user = await User.findById(req.user.userId);
     if (user && user.restaurantId) {
       restaurantId = user.restaurantId;
+
     } else {
-      // If user doesn't have restaurantId, check if they're the owner
-      const restaurant = await Restaurant.findByOwner(req.user.userId);
+      //If user doesn't have restaurant check if they have the Owner
+      const restaurant = await Restaurant.findByOwner(req, user.userId);
       if (restaurant) {
         restaurantId = restaurant._id;
+
       } else {
-        // Try staff lookup as fallback
+        //Try staff lookup as fallback 
         const staff = await Staff.findById(req.user.userId);
         if (staff && staff.restaurantId) {
           restaurantId = staff.restaurantId;
         }
       }
     }
+ 
+         // clean filters
+       const cleanQuery = {};
+       Object.keys(req.query).forEach(key=> {
+        const val = req.query[key];
+        if (val !== undefined && val !== null && val !== 'undefined' && val !== 'null' && val !== 'all' && val !== ''){
+          cleanQuery[key] = val;
+        }
+       });
+    
+         const filters = {
+          ...cleanQuery,
+          restuarantId: restaurantId
+         };
 
-    const filters = {
-      ...req.query,
-      restaurantId: restaurantId
-    };
+         
+       const categories = await menuService.getCategories(filters);
+       sendSuccess(res, "categories retrieved successfully ", categories);
+     } catch(error) {
+       next(error);
+     } 
+   };
 
-    const items = await menuService.getMenuItems(filters);
-    sendSuccess(res, "Menu items retrieved successfully", items);
-  } catch (error) {
-    next(error);
-  }
-}; // end
 
 export const getMenuItemById = async (req, res, next) => {
   try {

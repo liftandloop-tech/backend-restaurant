@@ -38,8 +38,17 @@ const menuItemSchema = new mongoose.Schema({
     default: 15
   },
   ingredients: [{
-    type: String
-  }],
+
+      itemId: {
+      type : mongoose.Schema.Types.ObjectId,
+      ref: 'InventoryItem'
+       },
+      quantity: {
+         type: Number,
+          required: true
+       }
+    }],
+  
   allergens: [{
     type: String
   }],
@@ -53,7 +62,7 @@ const menuItemSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  
+
   restaurantId: {
     type : mongoose.Schema.Types.ObjectId,
     ref: 'Restaurant',

@@ -17,9 +17,9 @@ router.use(authMiddleware);
 
 router.get("/get/customer", customerController.getCustomers);
 router.get("/get/customer/by/id", customerController.getCustomerById);
-router.post("/create/customer",  requireRoles('Owner', 'Admin', 'Manager', 'Waiter','Cashier'), customerController.createCustomer);
-router.put("/update/customer/by/id", requireRoles('Owner', 'Admin', 'Manager','Cashier'), customerController.updateCustomer);
-router.delete("/delete/customer/by/id", requireRoles('Owner', 'Admin', 'Manager','Cashier'), customerController.deleteCustomer);
+router.post("/create/customer", requireRoles('Owner', 'Admin', 'Manager', 'Waiter', 'Cashier'), customerController.createCustomer);
+router.put("/update/customer/by/id", requireRoles('Owner', 'Admin', 'Manager', 'Cashier'), customerController.updateCustomer);
+router.delete("/delete/customer/by/id", requireRoles('Owner', 'Admin', 'Manager', 'Cashier'), customerController.deleteCustomer);
 
 export default router;
 

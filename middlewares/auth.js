@@ -26,15 +26,15 @@ export const addToBlacklist = (token) => {
 //     });
 //   }
 // }
- export const authenticateToken = (req,res, next) =>{
+export const authenticateToken = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  if(!authHeader || !authHeader.startsWith("Bearer ")) {
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return res.status(401).json({
       success: false,
       message: "Unauthorized: Missing token"
     });
   }
- }
+}
 
 export const authMiddleware = async (req, res, next) => {
   try {
@@ -88,7 +88,8 @@ export const authMiddleware = async (req, res, next) => {
         name: staff.fullName,
         type: 'staff',
         phoneNumber: staff.phoneNumber,
-        username: staff.username
+        username: staff.username,
+        restaurantId: staff.restaurantId?.toString()
       };
     } else {
       // This is a regular user (owner/admin/manager)
@@ -105,7 +106,8 @@ export const authMiddleware = async (req, res, next) => {
         email: user.email,
         role: user.role,
         name: user.name,
-        type: 'user'
+        type: 'user',
+        restaurantId: user.restaurantId?.toString()
       };
 
       // License activation check for users - commented out since License is not imported

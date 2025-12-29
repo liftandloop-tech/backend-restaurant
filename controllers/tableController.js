@@ -8,23 +8,73 @@ export const getTables = async (req, res, next) => {
   try {
     // new for w
     // Get restaurantId from user
-    const User = (await import('../models/user.js')).default;
-    const Staff = (await import('../models/staff.js')).default;
-    const Restaurant = (await import('../models/restaurant.js')).default;
+//     const User = (await import('../models/user.js')).default;
+//     const Staff = (await import('../models/staff.js')).default;
+//     const Restaurant = (await import('../models/restaurant.js')).default;
 
-    let restaurantId = null;
+//     let restaurantId = req.user.restaurantId;
 
-    // First try to get restaurantId from the user model
-    const user = await User.findById(req.user.userId);
-    if (user && user.restaurantId) {
-      restaurantId = user.restaurantId;
-    } else {
-      // If user doesn't have restaurantId, check if they're the owner
-      const restaurant = await Restaurant.findByOwner(req.user.userId);
-      if (restaurant) {
-        restaurantId = restaurant._id;
-      } else {
-        // Try staff lookup as fallback
+//     if (!restaurantId) {
+//       // First try to get restaurantId from the user model (full fetch)
+//       const user = await User.findById(req.user.userId);
+//       if (user && user.restaurantId) {
+//         restaurantId = user.restaurantId;
+//       } else {
+//         // If user doesn't have restaurantId, check if they're the owner
+//         const restaurant = await Restaurant.findByOwner(req.user.userId);
+//         if (restaurant) {
+//           restaurantId = restaurant._id;
+//         } else {
+//           // Try staff lookup as fallback
+//           const staff = await Staff.findById(req.user.userId);
+//           if (staff && staff.restaurantId) {
+//             restaurantId = staff.restaurantId;
+//           }
+//         }
+//       }
+//     }
+
+//     // Clean filters: remove "undefined", "null", "all" strings which might come from frontend
+//     const cleanQuery = {};
+//     Object.keys(req.query).forEach(key => {
+//       const val = req.query[key];
+//       if (val !== undefined && val !== null && val !== 'undefined' && val !== 'null' && val !== 'all' && val !== '') {
+//         cleanQuery[key] = val;
+//       }
+//     });
+
+//     const filters = {
+//       ...cleanQuery,
+//       restaurantId: restaurantId
+//     };
+
+//     const tables = await tableService.getTables(filters);
+//     sendSuccess(res, "Tables retrieved successfully", tables);
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+  const User = (await import('../models/user.js')).default
+        const Staff = (await import('../models/staff.js')).default
+        const Restaurant = (await import('../models/restaurant.js')).default
+
+        let restaurantId = null;
+
+
+        // First try to get restaurantId from the user model
+        const user = await User.findById(req.user.userId);
+        if (user && user.restaurantId) {
+           restaurantId = user.restaurantId;
+
+        } else {
+      //If user doesn't have restaurant check if they have the Owner
+        const restaurant = await Restaurant.findByOwner(req, user.userId);
+        if (restaurant) {
+           restaurantId = restaurant._id;
+
+        } else {
+        //Try staff lookup as fallback 
         const staff = await Staff.findById(req.user.userId);
         if (staff && staff.restaurantId) {
           restaurantId = staff.restaurantId;
@@ -32,17 +82,27 @@ export const getTables = async (req, res, next) => {
       }
     }
 
-    const filters = {
-      ...req.query,
-      restaurantId: restaurantId
-    };
+       // clean filters
+       const cleanQuery = {};
+       Object.keys(req.query).forEach(key=> {
+        const val = req.query[key];
+        if (val !== undefined && val !== null && val !== 'undefined' && val !== 'null' && val !== 'all' && val !== ''){
+          cleanQuery[key] = val;
+        }
+       });
+    
+         const filters = {
+          ...cleanQuery,
+          restuarantId: restaurantId
+         };
 
-    const tables = await tableService.getTables(filters);
-    sendSuccess(res, "Tables retrieved successfully", tables);
-  } catch (error) {
-    next(error);
-  }
-};
+         
+       const tables  = await tableService.getTables(filters);
+       sendSuccess(res, "Tables retrieved successfully ", tables);
+     } catch(error) {
+       next(error);
+     } 
+   }; 
 
 export const getTableById = async (req, res, next) => {
   try {
@@ -64,7 +124,7 @@ export const createTable = async (req, res, next) => {
       ...req.body,
       restaurantId: restaurant._id
     };
-// end 
+    // end 
     const table = await tableService.createTable(tableData);
     sendSuccess(res, "Table created successfully", table, 201);
   } catch (error) {
@@ -151,7 +211,7 @@ export const updateTableStatus = async (req, res, next) => {
 
 
 export const transferTable = async (req, res, next) => {
-  try{
+  try {
     // Get restaurantId from user
     const User = (await import('../models/user.js')).default;
     const Staff = (await import('../models/staff.js')).default;
@@ -184,12 +244,12 @@ export const transferTable = async (req, res, next) => {
     const table = await tableService.transferTable(req.params.tableNumber, restaurantId);
     sendSuccess(res, "Table transferred successfully", table);
 
-  }catch(error){
+  } catch (error) {
     next(error);
   }
 };
 export const completeCleaning = async (req, res, next) => {
-  try{
+  try {
     // Get restaurantId from user
     const User = (await import('../models/user.js')).default;
     const Staff = (await import('../models/staff.js')).default;
@@ -222,7 +282,7 @@ export const completeCleaning = async (req, res, next) => {
     const table = await tableService.completeCleaning(req.params.tableNumber, restaurantId);
     sendSuccess(res, "Table cleaning completed successfully", table);
 
-  }catch(error){
+  } catch (error) {
     next(error);
   }
 };

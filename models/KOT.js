@@ -1,4 +1,4 @@
- import mongoose from "mongoose";
+import mongoose from "mongoose";
 
 //const mongoose=require('require')
 
@@ -20,7 +20,13 @@ const kotSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  items: [{
+  
+  items:[{
+    menuItemId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'MenuItem'
+  },
+
     name: {
       type: String,
       required: true
@@ -51,12 +57,12 @@ const kotSchema = new mongoose.Schema({
   completedAt: {
     type: Date
   },
-  
+
     isPrinted:{
-      type: Boolean,
-      default: false
-    },
-  
+    type: Boolean,
+    default: false
+  },
+
   printedAt: {
     type: Date
   },

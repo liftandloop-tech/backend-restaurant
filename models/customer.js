@@ -63,9 +63,9 @@ const customerSchema = new mongoose.Schema({
     type: String,
     maxlength: 1000
   },
-  
+
   restaurantId: {
-    type : mongoose.Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Restaurant',
     required: true // customers must belong to a restaurant
   }
