@@ -1,10 +1,38 @@
+//total new
 import * as dashboardService from "../services/dashboardService.js";
 import { sendSuccess, sendError } from "../utils/response.js";
 import { AppError } from "../utils/errorHandler.js";
 
-// const{sendSuccess}=require('../utils/response.js')
-// const dashboardService=require('../services/dashboardService.js')
-// const{AppError}=require('../utils/errorHandler.js')
+// Helper to resolve restaurantId
+const resolveRestaurantId = async (userId) => {
+  // Dynamic imports to avoid potential circular dependency issues if any, though standard imports should be fine here.
+  // Keeping safe given previous patterns.
+  const User = (await import('../models/user.js')).default;
+  const Staff = (await import('../models/staff.js')).default;
+  const Restaurant = (await import('../models/restaurant.js')).default;
+
+  let restaurantId = null;
+  const user = await User.findById(userId);
+  if (user && user.restaurantId) {
+    restaurantId = user.restaurantId;
+  } else if (user) {
+    const restaurant = await Restaurant.findByOwner(user._id);
+    if (restaurant) {
+      restaurantId = restaurant._id;
+    } else {
+      const staff = await Staff.findById(userId);
+      if (staff && staff.restaurantId) {
+        restaurantId = staff.restaurantId;
+      }
+    }
+  } else {
+    const staff = await Staff.findById(userId);
+    if (staff && staff.restaurantId) {
+      restaurantId = staff.restaurantId;
+    }
+  }
+  return restaurantId;
+};
 
 /**
  * Get today's dashboard summary
@@ -12,7 +40,17 @@ import { AppError } from "../utils/errorHandler.js";
  */
 export const getTodaySummary = async (req, res, next) => {
   try {
-    const summary = await dashboardService.getTodaySummary();
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    if (!restaurantId) {
+      return sendSuccess(res, "Today's summary retrieved successfully", {
+        totalSales: 0,
+        totalOrders: 0,
+        pendingOrders: 0,
+        completedOrders: 0,
+        customers: 0
+      });
+    }
+    const summary = await dashboardService.getTodaySummary(restaurantId);
     sendSuccess(res, "Today's summary retrieved successfully", summary);
   } catch (error) {
     next(error);
@@ -26,7 +64,7 @@ export const getTodaySummary = async (req, res, next) => {
 export const getSalesStatistics = async (req, res, next) => {
   try {
     const { from, to } = req.query;
-    
+
     if (!from || !to) {
       throw new AppError("Both 'from' and 'to' date parameters are required", 400);
     }
@@ -42,7 +80,11 @@ export const getSalesStatistics = async (req, res, next) => {
       throw new AppError("'from' date must be before 'to' date", 400);
     }
 
-    const statistics = await dashboardService.getSalesStatistics(from, to);
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    if (!restaurantId) {
+      return sendSuccess(res, "Sales statistics retrieved successfully", []);
+    }
+    const statistics = await dashboardService.getSalesStatistics(from, to, restaurantId);
     sendSuccess(res, "Sales statistics retrieved successfully", statistics);
   } catch (error) {
     next(error);
@@ -56,7 +98,7 @@ export const getSalesStatistics = async (req, res, next) => {
 export const getTopSellingItems = async (req, res, next) => {
   try {
     const { from, to, limit = 10 } = req.query;
-    
+
     if (!from || !to) {
       throw new AppError("Both 'from' and 'to' date parameters are required", 400);
     }
@@ -73,7 +115,11 @@ export const getTopSellingItems = async (req, res, next) => {
       throw new AppError("Limit must be a number between 1 and 100", 400);
     }
 
-    const topItems = await dashboardService.getTopSellingItems(from, to, limitNum);
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    if (!restaurantId) {
+      return sendSuccess(res, "Top selling items retrieved successfully", []);
+    }
+    const topItems = await dashboardService.getTopSellingItems(from, to, limitNum, restaurantId);
     sendSuccess(res, "Top selling items retrieved successfully", topItems);
   } catch (error) {
     next(error);
@@ -87,7 +133,7 @@ export const getTopSellingItems = async (req, res, next) => {
 export const getStaffPerformance = async (req, res, next) => {
   try {
     const { from, to } = req.query;
-    
+
     if (!from || !to) {
       throw new AppError("Both 'from' and 'to' date parameters are required", 400);
     }
@@ -99,7 +145,11 @@ export const getStaffPerformance = async (req, res, next) => {
       throw new AppError("Invalid date format. Use YYYY-MM-DD format", 400);
     }
 
-    const performance = await dashboardService.getStaffPerformance(from, to);
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    if (!restaurantId) {
+      return sendSuccess(res, "Staff performance retrieved successfully", []);
+    }
+    const performance = await dashboardService.getStaffPerformance(from, to, restaurantId);
     sendSuccess(res, "Staff performance retrieved successfully", performance);
   } catch (error) {
     next(error);
@@ -113,7 +163,7 @@ export const getStaffPerformance = async (req, res, next) => {
 export const getPaymentMethodBreakdown = async (req, res, next) => {
   try {
     const { from, to } = req.query;
-    
+
     if (!from || !to) {
       throw new AppError("Both 'from' and 'to' date parameters are required", 400);
     }
@@ -125,7 +175,11 @@ export const getPaymentMethodBreakdown = async (req, res, next) => {
       throw new AppError("Invalid date format. Use YYYY-MM-DD format", 400);
     }
 
-    const breakdown = await dashboardService.getPaymentMethodBreakdown(from, to);
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    if (!restaurantId) {
+      return sendSuccess(res, "Payment method breakdown retrieved successfully", []);
+    }
+    const breakdown = await dashboardService.getPaymentMethodBreakdown(from, to, restaurantId);
     sendSuccess(res, "Payment method breakdown retrieved successfully", breakdown);
   } catch (error) {
     next(error);
@@ -140,12 +194,16 @@ export const getRecentActivity = async (req, res, next) => {
   try {
     const { limit = 10 } = req.query;
     const limitNum = parseInt(limit);
-    
+
     if (isNaN(limitNum) || limitNum < 1 || limitNum > 50) {
       throw new AppError("Limit must be a number between 1 and 50", 400);
     }
 
-    const activity = await dashboardService.getRecentActivity(limitNum);
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    if (!restaurantId) {
+      return sendSuccess(res, "Recent activity retrieved successfully", []);
+    }
+    const activity = await dashboardService.getRecentActivity(limitNum, restaurantId);
     sendSuccess(res, "Recent activity retrieved successfully", activity);
   } catch (error) {
     next(error);
@@ -159,7 +217,7 @@ export const getRecentActivity = async (req, res, next) => {
 export const getDashboardOverview = async (req, res, next) => {
   try {
     const { from, to } = req.query;
-    
+
     // If dates provided, validate them
     if (from || to) {
       if (!from || !to) {
@@ -178,10 +236,20 @@ export const getDashboardOverview = async (req, res, next) => {
       }
     }
 
-    const overview = await dashboardService.getDashboardOverview(from, to);
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    if (!restaurantId) {
+      return sendSuccess(res, "Dashboard overview retrieved successfully", {
+        today: { totalSales: 0, totalOrders: 0, customers: 0 },
+        salesTrend: [],
+        topItems: [],
+        staffPerformance: [],
+        paymentMethods: [],
+        recentActivity: []
+      });
+    }
+    const overview = await dashboardService.getDashboardOverview(from, to, restaurantId);
     sendSuccess(res, "Dashboard overview retrieved successfully", overview);
   } catch (error) {
     next(error);
   }
 };
-

@@ -20,12 +20,12 @@ const kotSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  
-  items:[{
+
+  items: [{
     menuItemId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'MenuItem'
-  },
+    },
 
     name: {
       type: String,
@@ -43,7 +43,7 @@ const kotSchema = new mongoose.Schema({
   }],
   status: {
     type: String,
-    enum: ['pending', 'preparing', 'ready', 'sent'],
+    enum: ['pending', 'preparing', 'ready', 'sent', 'cancelled'],
     default: 'pending',
     index: true
   },
@@ -58,7 +58,7 @@ const kotSchema = new mongoose.Schema({
     type: Date
   },
 
-    isPrinted:{
+    isPrinted: {
     type: Boolean,
     default: false
   },
@@ -66,12 +66,12 @@ const kotSchema = new mongoose.Schema({
   printedAt: {
     type: Date
   },
-  printedBy:{
+  printedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Staff'
   },
   restaurantId: {
-    type : mongoose.Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Restaurant',
     required: true // kots must belong to a restaurant
   }
@@ -81,7 +81,7 @@ const kotSchema = new mongoose.Schema({
 
 // Generate KOT number before saving (fallback - should be set in service)
 // This is kept as a fallback for cases where kotNumber might not be set
-kotSchema.pre('save', async function(next) {
+ kotSchema.pre('save', async function(next) {
   if (!this.kotNumber && this.station) {
     const count = await mongoose.model('KOT').countDocuments();
     const stationCode = this.station.substring(0, 3).toUpperCase();

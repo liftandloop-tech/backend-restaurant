@@ -71,6 +71,7 @@ const restaurantSchema = new mongoose.Schema({
   licenseKey: {
     type: String,
     unique: true,
+    sparse: true,
     uppercase: true,
     trim: true
   },
@@ -186,14 +187,14 @@ const restaurantSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
- 
+
   totalStaff: {
-    type:Number,
-    default:0
+    type: Number,
+    default: 0
   },
   totalTables: {
-    type:Number,
-    default:0
+    type: Number,
+    default: 0
   },
   totalInventoryItems: {
     type: Number,
@@ -245,14 +246,14 @@ restaurantSchema.index({ isActive: 1 });
 restaurantSchema.index({ ownerId: 1 });
 
 // Virtual for formatted address
-restaurantSchema.virtual('formattedAddress').get(function() {
+restaurantSchema.virtual('formattedAddress').get(function () {
   const addr = this.address;
   if (!addr) return '';
   return `${addr.street || ''}, ${addr.city || ''}, ${addr.state || ''} ${addr.zipCode || ''}, ${addr.country || ''}`.replace(/^, |, $/, '');
 });
 
 // Virtual for business status
-restaurantSchema.virtual('isOpen').get(function() {
+restaurantSchema.virtual('isOpen').get(function () {
   const now = new Date();
   const dayOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][now.getDay()];
   const todayHours = this.businessHours[dayOfWeek];
@@ -269,7 +270,7 @@ restaurantSchema.virtual('isOpen').get(function() {
 });
 
 // Pre-save middleware
-restaurantSchema.pre('save', function(next) {
+restaurantSchema.pre('save', function (next) {
   if (this.isModified('totalOrders') && this.totalOrders > 0) {
     this.averageOrderValue = this.totalRevenue / this.totalOrders;
   }
@@ -277,12 +278,12 @@ restaurantSchema.pre('save', function(next) {
 });
 
 // Static method to find restaurant by owner
-restaurantSchema.statics.findByOwner = function(ownerId) {
+restaurantSchema.statics.findByOwner = function (ownerId) {
   return this.findOne({ ownerId, isActive: true });
 };
 
 // Static method to find restaurant by license
-restaurantSchema.statics.findByLicense = function(licenseKey) {
+restaurantSchema.statics.findByLicense = function (licenseKey) {
   return this.findOne({ licenseKey, isActive: true });
 };
 

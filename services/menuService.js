@@ -11,7 +11,7 @@ import { AppError } from "../utils/errorHandler.js";
 export const getCategories = async (filters = {}) => {
   const query = {};
   if (filters.isActive !== undefined) query.isActive = filters.isActive;
-if (filters.restaurantId) query.restaurantId = filters.restaurantId;
+  if (filters.restaurantId) query.restaurantId = filters.restaurantId;
   return await Category.find(query).sort({ displayOrder: 1, createdAt: -1 });
 };
 
@@ -19,16 +19,22 @@ export const createCategory = async (data) => {
   return await Category.create(data);
 };
 
-export const updateCategory = async (id, data) => {
-  const category = await Category.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+export const updateCategory = async (id, data, restaurantId) => {
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const category = await Category.findOneAndUpdate(query, data, { new: true, runValidators: true });
   if (!category) {
     throw new AppError("Category not found", 404);
   }
   return category;
 };
 
-export const deleteCategory = async (id) => {
-  const category = await Category.findByIdAndDelete(id);
+export const deleteCategory = async (id, restaurantId) => {
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const category = await Category.findOneAndDelete(query);
   if (!category) {
     throw new AppError("Category not found", 404);
   }
@@ -45,8 +51,11 @@ export const getMenuItems = async (filters = {}) => {
   return await MenuItem.find(query).populate('categoryId', 'name').sort({ displayOrder: 1, createdAt: -1 });
 };
 
-export const getMenuItemById = async (id) => {
-  const item = await MenuItem.findById(id).populate('categoryId');
+export const getMenuItemById = async (id, restaurantId) => {
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const item = await MenuItem.findOne(query).populate('categoryId');
   if (!item) {
     throw new AppError("Menu item not found", 404);
   }
@@ -68,29 +77,35 @@ export const createMenuItem = async (data) => {
 };
 // end
 
-export const updateMenuItem = async (id, data) => {
-  const item = await MenuItem.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+export const updateMenuItem = async (id, data, restaurantId) => {
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const item = await MenuItem.findOneAndUpdate(query, data, { new: true, runValidators: true });
   if (!item) {
     throw new AppError("Menu item not found", 404);
   }
   return item;
 };
 //new for w
-export const deleteMenuItem = async (id) => {
-  const item = await MenuItem.findById(id);
+export const deleteMenuItem = async (id, restaurantId) => {
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const item = await MenuItem.findOne(query);
   if (!item) {
     throw new AppError("Menu item not found", 404);
   }
 
   // Store restaurantId before deletion for stats update
-  const restaurantId = item.restaurantId;
+  const itemRestaurantId = item.restaurantId;
 
   await MenuItem.findByIdAndDelete(id);
 
   // Update restaurant statistics
   try {
     const restaurantService = await import('../services/restaurantService.js');
-    await restaurantService.decrementRestaurantStat(restaurantId, 'totalMenuItems');
+    await restaurantService.decrementRestaurantStat(itemRestaurantId, 'totalMenuItems');
   } catch (error) {
     console.error('Error updating restaurant stats after menu item deletion:', error);
   }

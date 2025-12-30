@@ -14,11 +14,9 @@ const staffSchema = new mongoose.Schema({
         type: String,
         required: true,
         trim: true,
-        unique: true,
     },
     email: {
         type: String,
-        unique: true,
         sparse: true,
         trim: true,
         lowercase: true
@@ -99,7 +97,6 @@ const staffSchema = new mongoose.Schema({
     username: {
         type: String,
         required: true,
-        unique: true,
         sparse: true,
         trim: true,
         lowercase: true
@@ -129,11 +126,13 @@ const staffSchema = new mongoose.Schema({
 
 )
 // Additional indexes for better performance
-// Note: email and phoneNumber indexes are handled by unique constraints above
-// Note: username index is handled by the unique constraint above
+// Note: email, phoneNumber, and username indexes are scoped to restaurantId
 staffSchema.index({ role: 1 })
 staffSchema.index({ isActive: 1 })
 staffSchema.index({ createdAt: -1 })
+staffSchema.index({ restaurantId: 1, phoneNumber: 1 }, { unique: true });
+staffSchema.index({ restaurantId: 1, email: 1 }, { unique: true, sparse: true });
+staffSchema.index({ restaurantId: 1, username: 1 }, { unique: true, sparse: true });
 
 //virtual for staff id
 staffSchema.virtual('staffId').get(function () {

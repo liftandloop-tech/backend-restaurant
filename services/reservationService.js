@@ -1,7 +1,7 @@
 import Reservation from "../models/reservation.js";
 import Table from "../models/table.js";
 import { AppError } from "../utils/errorHandler.js";
- 
+
 
 // const Reservation = require('../models/reservation.js')
 // const Table = require('../models/table.js')
@@ -19,9 +19,12 @@ export const getReservations = async (filters = {}) => {
   if (filters.restaurantId) query.restaurantId = filters.restaurantId;
   return await Reservation.find(query).populate('tableId').sort({ reservationDate: -1 });
 };
+//new
+export const getReservationById = async (id, restaurantId) => {
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
 
-export const getReservationById = async (id) => {
-  const reservation = await Reservation.findById(id).populate('tableId');
+  const reservation = await Reservation.findOne(query).populate('tableId');
   if (!reservation) {
     throw new AppError("Reservation not found", 404);
   }
@@ -29,11 +32,11 @@ export const getReservationById = async (id) => {
 };
 
 export const createReservation = async (data) => {
-  // Check if table exists and is available
-  const table = await Table.findOne({ tableNumber: data.tableNumber });
+  // Check if table exists and is available in the specific restaurant
+  const table = await Table.findOne({ tableNumber: data.tableNumber, restaurantId: data.restaurantId });
   if (!table) {
-    throw new AppError("Table not found", 404);
-  }
+    throw new AppError("Table not found in this restaurant", 404);
+  }//end
   // new for w
 
   data.tableId = table._id;
@@ -50,15 +53,20 @@ export const createReservation = async (data) => {
   return reservation;
 };
 // end
-export const updateReservation = async (id, data) => {
-  const reservation = await Reservation.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+//new
+export const updateReservation = async (id, data, restaurantId) => {
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const reservation = await Reservation.findOneAndUpdate(query, data, { new: true, runValidators: true });
+  //end
   if (!reservation) {
     throw new AppError("Reservation not found", 404);
   }
   return reservation;
 };
 
-export const updateReservationStatus = async (id, status, userId) => {
+export const updateReservationStatus = async (id, status, userId,restaurantId) => {
   const updateData = { status };
   if (status === 'confirmed') {
     updateData.confirmedBy = userId;
@@ -66,29 +74,36 @@ export const updateReservationStatus = async (id, status, userId) => {
   if (status === 'cancelled') {
     updateData.cancelledAt = new Date();
   }
-  
-  const reservation = await Reservation.findByIdAndUpdate(id, updateData, { new: true, runValidators: true });
+//new
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const reservation = await Reservation.findOneAndUpdate(query, updateData, { new: true, runValidators: true });
+  //end
   if (!reservation) {
     throw new AppError("Reservation not found", 404);
   }
   return reservation;
 };
 //new for w
-export const deleteReservation = async (id) => {
-  const reservation = await Reservation.findById(id);
+export const deleteReservation = async (id, restaurantId) => {
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const reservation = await Reservation.findOne(query);
   if (!reservation) {
     throw new AppError("Reservation not found", 404);
   }
 
   // Store restaurantId before deletion for stats update
-  const restaurantId = reservation.restaurantId;
+  const itemRestaurantId = reservation.restaurantId;
 
   await Reservation.findByIdAndDelete(id);
 
   // Update restaurant statistics
   try {
     const restaurantService = await import('../services/restaurantService.js');
-    await restaurantService.decrementRestaurantStat(restaurantId, 'totalReservations');
+    await restaurantService.decrementRestaurantStat(itemRestaurantId, 'totalReservations');
   } catch (error) {
     console.error('Error updating restaurant stats after reservation deletion:', error);
   }

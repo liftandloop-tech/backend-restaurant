@@ -12,14 +12,17 @@ export const getInventoryItems = async (filters = {}) => {
     query.$text = { $search: filters.search };
   }
 
-if (filters.restaurantId){
+  if (filters.restaurantId) {
     query.restaurantId = filters.restaurantId;
   }
   return await InventoryItem.find(query).sort({ name: 1 });
 };
 
-export const getInventoryItemById = async (id) => {
-  const item = await InventoryItem.findById(id);
+export const getInventoryItemById = async (id, restaurantId) => {
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const item = await InventoryItem.findOne(query);
   if (!item) {
     throw new AppError("Inventory item not found", 404);
   }
@@ -40,29 +43,35 @@ export const createInventoryItem = async (data) => {
   return item;
 };
 // end
-export const updateInventoryItem = async (id, data) => {
-  const item = await InventoryItem.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+export const updateInventoryItem = async (id, data, restaurantId) => {
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const item = await InventoryItem.findOneAndUpdate(query, data, { new: true, runValidators: true });
   if (!item) {
     throw new AppError("Inventory item not found", 404);
   }
   return item;
 };
 // new for w
-export const deleteInventoryItem = async (id) => {
-  const item = await InventoryItem.findById(id);
+export const deleteInventoryItem = async (id, restaurantId) => {
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const item = await InventoryItem.findOne(query);
   if (!item) {
     throw new AppError("Inventory item not found", 404);
   }
 
   // Store restaurantId before deletion for stats update
-  const restaurantId = item.restaurantId;
+  const itemRestaurantId = item.restaurantId;
 
   await InventoryItem.findByIdAndDelete(id);
 
   // Update restaurant statistics
   try {
     const restaurantService = await import('../services/restaurantService.js');
-    await restaurantService.decrementRestaurantStat(restaurantId, 'totalInventoryItems');
+    await restaurantService.decrementRestaurantStat(itemRestaurantId, 'totalInventoryItems');
   } catch (error) {
     console.error('Error updating restaurant stats after inventory item deletion:', error);
   }
@@ -70,10 +79,14 @@ export const deleteInventoryItem = async (id) => {
   return item;
 };
 // end
-export const getLowStockItems = async () => {
-  return await InventoryItem.find({
+export const getLowStockItems = async (filters = {}) => {
+  const query = {
     $expr: { $lte: ['$currentStock', '$minStockLevel'] }
-  }).sort({ currentStock: 1 });
+  };
+  if (filters.restaurantId) {
+    query.restaurantId = filters.restaurantId;
+  }
+  return await InventoryItem.find(query).sort({ currentStock: 1 });
 };
 // new for w
 // Vendors
@@ -118,12 +131,17 @@ export const createPurchaseOrder = async (data) => {
   return po;
 };
 
-export const updatePurchaseOrderStatus = async (id, status) => {
+export const updatePurchaseOrderStatus = async (id, status, restaurantId) => {
   const PurchaseOrder = (await import('../models/purchaseOrder.js')).default;
   const InventoryItem = (await import('../models/inventory.js')).default;
 
   const po = await PurchaseOrder.findById(id);
   if (!po) throw new AppError("Purchase order not found", 404);
+
+  // Verify restaurantId
+  if (restaurantId && po.restaurantId && po.restaurantId.toString() !== restaurantId.toString()) {
+    throw new AppError("You don't have permission to update this purchase order", 403);
+  }
 
   const oldStatus = po.status;
   po.status = status;
@@ -165,4 +183,29 @@ export const createWastage = async (data) => {
   return wastage;
 };
 
+// Deduct stock based on order
+export const deductStockForOrder = async (orderId) => {
+  const Order = (await import('../models/order.js')).default;
+  const MenuItem = (await import('../models/menu.js')).default;
+  const InventoryItem = (await import('../models/inventory.js')).default;
+
+  const order = await Order.findById(orderId);
+  if (!order) return;
+
+  for (const item of order.items) {
+    if (item.menuItemId) {
+      const menuItem = await MenuItem.findById(item.menuItemId);
+      if (menuItem && menuItem.ingredients && menuItem.ingredients.length > 0) {
+        for (const ingredient of menuItem.ingredients) {
+          if (ingredient.itemId) {
+            const qtyUsed = ingredient.quantity * item.qty;
+            await InventoryItem.findByIdAndUpdate(ingredient.itemId, {
+              $inc: { currentStock: -qtyUsed }
+            });
+          }
+        }
+      }
+    }
+  }
+};
 // end

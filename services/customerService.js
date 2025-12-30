@@ -14,8 +14,11 @@ export const getCustomers = async (filters = {}) => {
   return await Customer.find(query).sort({ createdAt: -1 });
 };
 
-export const getCustomerById = async (id) => {
-  const customer = await Customer.findById(id);
+export const getCustomerById = async (id, restaurantId) => {
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const customer = await Customer.findOne(query);
   if (!customer) {
     throw new AppError("Customer not found", 404);
   }
@@ -46,35 +49,39 @@ export const createCustomer = async (data) => {
   // end
 };
 
-export const updateCustomer = async (id, data) => {
-  const customer = await Customer.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+export const updateCustomer = async (id, data, restaurantId) => {
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const customer = await Customer.findOneAndUpdate(query, data, { new: true, runValidators: true });
   if (!customer) {
     throw new AppError("Customer not found", 404);
   }
   return customer;
 };
 
-export const deleteCustomer = async (id) => {
-  const customer = await Customer.findById(id);
+export const deleteCustomer = async (id, restaurantId) => {
+  const query = { _id: id };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const customer = await Customer.findOne(query);
   if (!customer) {
     throw new AppError("Customer not found", 404);
   }
-  //  new for w
-
+//new
   // Store restaurantId before deletion for stats update
-  const restaurantId = customer.restaurantId;
+  const customerRestaurantId = customer.restaurantId;
 
   await Customer.findByIdAndDelete(id);
 
   // Update restaurant statistics
   try {
     const restaurantService = await import('../services/restaurantService.js');
-    await restaurantService.decrementRestaurantStat(restaurantId, 'totalCustomers');
+    await restaurantService.decrementRestaurantStat(customerRestaurantId, 'totalCustomers');
   } catch (error) {
     console.error('Error updating restaurant stats after customer deletion:', error);
   }
 
-  // end
   return customer;
 };
 

@@ -1,16 +1,43 @@
+//total new
 import * as billingService from "../services/billingService.js";
 import { sendSuccess } from "../utils/response.js";
 import { AppError } from "../utils/errorHandler.js";
 
-// const{sendSuccess}=require('../utils/response.js')
-// const orderService=require('../services/orderService.js')
-// const{AppError}=require('../utils/errorHandler')
+// Helper to resolve restaurantId
+const resolveRestaurantId = async (userId) => {
+  // Dynamic imports to avoid potential circular dependency issues
+  const User = (await import('../models/user.js')).default;
+  const Staff = (await import('../models/staff.js')).default;
+  const Restaurant = (await import('../models/restaurant.js')).default;
+
+  let restaurantId = null;
+  const user = await User.findById(userId);
+  if (user && user.restaurantId) {
+    restaurantId = user.restaurantId;
+  } else if (user) {
+    const restaurant = await Restaurant.findByOwner(user._id);
+    if (restaurant) {
+      restaurantId = restaurant._id;
+    } else {
+      const staff = await Staff.findById(userId);
+      if (staff && staff.restaurantId) {
+        restaurantId = staff.restaurantId;
+      }
+    }
+  } else {
+    const staff = await Staff.findById(userId);
+    if (staff && staff.restaurantId) {
+      restaurantId = staff.restaurantId;
+    }
+  }
+  return restaurantId;
+};
 
 export const createBill = async (req, res, next) => {
   try {
     const { orderId } = req.params;
     const { idempotencyKey } = req.body;
-    const bill = await billingService.createBill(orderId, req.user.userId, idempotencyKey,req.user.role);
+    const bill = await billingService.createBill(orderId, req.user.userId, idempotencyKey, req.user.role);
     sendSuccess(res, "Bill created successfully", bill, 201);
   } catch (error) {
     next(error);
@@ -21,14 +48,14 @@ export const processPayment = async (req, res, next) => {
   try {
     const { billId } = req.params;
     const { paymentMethod, transactionId, gatewayResponse, idempotencyKey } = req.validated;
-    
+
     const result = await billingService.processPayment(
       billId,
       { paymentMethod, transactionId, gatewayResponse },
       req.user.userId,
       idempotencyKey
     );
-    
+
     sendSuccess(res, "Payment processed successfully", result);
   } catch (error) {
     next(error);
@@ -37,7 +64,15 @@ export const processPayment = async (req, res, next) => {
 
 export const getBills = async (req, res, next) => {
   try {
-    const bills = await billingService.getBills(req.query);
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    if (!restaurantId) {
+      return sendSuccess(res, "Bills retrieved successfully", []);
+    }
+    const filters = req.query;
+    if (restaurantId) {
+      filters.restaurantId = restaurantId;
+    }
+    const bills = await billingService.getBills(filters);
     sendSuccess(res, "Bills retrieved successfully", bills);
   } catch (error) {
     next(error);
@@ -46,7 +81,8 @@ export const getBills = async (req, res, next) => {
 
 export const getBillById = async (req, res, next) => {
   try {
-    const bill = await billingService.getBillById(req.params.id);
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const bill = await billingService.getBillById(req.params.id, restaurantId);
     sendSuccess(res, "Bill retrieved successfully", bill);
   } catch (error) {
     next(error);
@@ -57,14 +93,16 @@ export const processRefund = async (req, res, next) => {
   try {
     const { billId } = req.params;
     const { refundAmount, reason } = req.body;
-    
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+
     const bill = await billingService.processRefund(
       billId,
       refundAmount,
       reason,
-      req.user.userId
+      req.user.userId,
+      restaurantId
     );
-    
+
     sendSuccess(res, "Refund processed successfully", bill);
   } catch (error) {
     next(error);
@@ -73,9 +111,10 @@ export const processRefund = async (req, res, next) => {
 export const printBill = async (req, res, next) => {
   try {
     const { billId } = req.params;
+    const restaurantId = await resolveRestaurantId(req.user.userId);
 
     // Get bill with populated order and cashier data
-    const bill = await billingService.getBillById(billId);
+    const bill = await billingService.getBillById(billId, restaurantId);
 
     if (!bill) {
       throw new AppError("Bill not found", 404);
@@ -90,17 +129,17 @@ export const printBill = async (req, res, next) => {
     // Print the bill (this will log the print job in development)
     const printResult = await printer.printBill(bill);
 
-    
-//Remove KOTs associated with this order after bill is printed
-try{
-  const KOT =(await import("./models/KOT.js")).default;
-  await KOT.deleteMany({orderId:bill.orderId._id});
-  console.log(`Removed ${await KOT.countDocuments({orderId: bill.orderId._id})} KOTs for order ${bill.orderId.orderNumber}`);
 
-}catch(kotError){
-  console.error('Failed to remove KOTs after bill printing:',kotError);
-  //Dont fail bill printing if KOT removal fails 
-}
+    //Remove KOTs associated with this order after bill is printed
+    try {
+      const KOT = (await import("../models/KOT.js")).default;
+      await KOT.deleteMany({ orderId: bill.orderId._id });
+      console.log(`Removed ${await KOT.countDocuments({ orderId: bill.orderId._id })} KOTs for order ${bill.orderId.orderNumber}`);
+
+    } catch (kotError) {
+      console.error('Failed to remove KOTs after bill printing:', kotError);
+      //Dont fail bill printing if KOT removal fails 
+    }
     sendSuccess(res, "Bill printed successfully", {
       billId: bill._id,
       billNumber: bill.billNumber,
@@ -111,13 +150,16 @@ try{
   }
 };
 
-export const getBillsByCashier = async (req,res,next) => {
-  try{
-    const {cashierId} = req.params;
-    const bills = await billingService.getBillsByCashier(req.user.userId,req.user.role)
-sendSuccess(res, "Bills retrieved successfully", bills);
-  }catch(error){
+export const getBillsByCashier = async (req, res, next) => {
+  try {
+    const { cashierId } = req.params;
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    if (!restaurantId) {
+      return sendSuccess(res, "Bills retrieved successfully", []);
+    }
+    const bills = await billingService.getBillsByCashier(req.user.userId, req.user.role, restaurantId)
+    sendSuccess(res, "Bills retrieved successfully", bills);
+  } catch (error) {
     next(error);
   }
 };
-

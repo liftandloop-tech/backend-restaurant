@@ -11,17 +11,25 @@ import { AppError } from '../utils/errorHandler.js'
  */
 export const registerStaffController = async (req, res, next) => {
     try {
-        // Ensure user has a restaurant (create one if needed)
-        const restaurantService = (await import('../services/restaurantService.js'));
-        const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
-        //Ensure user has a restaurant (create one if needed)
+        let restaurantId = req.body.restaurantId;
 
-        const restaurantId = restaurant._id;
+        if (!restaurantId) {
+            // Ensure user has a restaurant (create one if needed)
+            const restaurantService = (await import('../services/restaurantService.js'));
+            const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
+            if (restaurant) {
+                restaurantId = restaurant._id;
+            }
+        }
+
+        if (!restaurantId) {
+            throw new AppError('Restaurant ID is required', 400);
+        }
 
         const staffData = {
             ...req.body,
             restaurantId: restaurantId,
-            createdBy: req.user?.userId || null //from authentication middleware
+            createdBy: req.body.createdBy || req.user?.userId || null
         };
 
         const staff = await registerStaff(staffData)
@@ -52,6 +60,50 @@ export const loginStaffController = async (req, res, next) => {
  */
 export const getAllStaffController = async (req, res, next) => {
     try {
+        //new
+        const User = (await import('../models/user.js')).default;
+        const Staff = (await import('../models/staff.js')).default;
+        const Restaurant = (await import('../models/restaurant.js')).default;
+
+        let restaurantId = null;
+        //First try to get restaurantId from the user model
+        const user = await User.findById(req.user.userId);
+        if (user && user.restaurantId) {
+            restaurantId = user.restaurantId;
+        } else if (user) {
+            const restaurant = await Restaurant.findByOwner(user._id);
+            if (restaurant) {
+                restaurantId = restaurant._id;
+            } else {
+                const staff = await Staff.findById(req.user.userId);
+                if (staff && staff.restaurantId) {
+                    restaurantId = staff.restaurantId;
+                }
+            }
+        } else {
+            const staff = await Staff.findById(req.user.userId);
+            if (staff && staff.restaurantId) {
+                restaurantId = staff.restaurantId;
+            }
+        }
+
+        if (!restaurantId) {
+            return response.success(res, "staff member retrieved successfully", {
+                data: [],
+                pagination: {
+                    totalDocs: 0,
+                    limit: parseInt(req.query.limit) || 10,
+                    totalPages: 0,
+                    page: parseInt(req.query.page) || 1,
+                    pagingCounter: 0,
+                    hasPrevPage: false,
+                    hasNextPage: false,
+                    prevPage: null,
+                    nextPage: null
+                }
+            })
+        }
+        //end
         const options = {
             page: parseInt(req.query.page) || 1,
             limit: parseInt(req.query.limit) || 10,
@@ -59,6 +111,7 @@ export const getAllStaffController = async (req, res, next) => {
             role: req.query.role,
             isActive: req.query.isActive ? req.query.isActive === 'true' : undefined,
             branch: req.query.branch,
+            restaurantId: restaurantId,
             sortBy: req.query.sortBy || 'createdAt',
             sortOrder: req.query.sortOrder || 'desc'
         };
@@ -173,7 +226,42 @@ export const resetPasswordController = async (req, res, next) => {
  */
 export const getStaffStatsController = async (req, res, next) => {
     try {
-        const stats = await getStaffStats();
+        //new
+        const User = (await import('../models/user.js')).default;
+        const Staff = (await import('../models/staff.js')).default;
+        const Restaurant = (await import('../models/restaurant.js')).default;
+
+        let restaurantId = null;
+        const user = await User.findById(req.user.userId);
+        if (user && user.restaurantId) {
+            restaurantId = user.restaurantId;
+        } else if (user) {
+            const restaurant = await Restaurant.findByOwner(user._id);
+            if (restaurant) {
+                restaurantId = restaurant._id;
+            } else {
+                const staff = await Staff.findById(req.user.userId);
+                if (staff && staff.restaurantId) {
+                    restaurantId = staff.restaurantId;
+                }
+            }
+        } else {
+            const staff = await Staff.findById(req.user.userId);
+            if (staff && staff.restaurantId) {
+                restaurantId = staff.restaurantId;
+            }
+        }
+
+        if (!restaurantId) {
+            return response.success(res, "staff statistics retrieved successfully", {
+                totalStaff: 0,
+                activeStaff: 0,
+                totalSalary: 0
+            })
+        }
+
+        const stats = await getStaffStats(restaurantId);
+        //end
         response.success(res, "staff statistics retrieved successfully", stats)
     } catch (error) {
         next(error);
@@ -226,7 +314,38 @@ export const getActiveStaffByRoleController = async (req, res, next) => {
         if (!validRoles.includes(role)) {
             throw new AppError("Invalid role specified", 400)
         }
-        const activeStaff = await getActiveStaffByRole(role);
+        //end
+        const User = (await import('../models/user.js')).default;
+        const Staff = (await import('../models/staff.js')).default;
+        const Restaurant = (await import('../models/restaurant.js')).default;
+
+        let restaurantId = null;
+        const user = await User.findById(req.user.userId);
+        if (user && user.restaurantId) {
+            restaurantId = user.restaurantId;
+        } else if (user) {
+            const restaurant = await Restaurant.findByOwner(user._id);
+            if (restaurant) {
+                restaurantId = restaurant._id;
+            } else {
+                const staff = await Staff.findById(req.user.userId);
+                if (staff && staff.restaurantId) {
+                    restaurantId = staff.restaurantId;
+                }
+            }
+        } else {
+            const staff = await Staff.findById(req.user.userId);
+            if (staff && staff.restaurantId) {
+                restaurantId = staff.restaurantId;
+            }
+        }
+
+        if (!restaurantId) {
+            return sendSuccess(res, `Active${role} staff retrieved successfully`, [])
+        }
+
+        const activeStaff = await getActiveStaffByRole(role, restaurantId);
+        //end
         sendSuccess(res, `Active${role} staff retrieved successfully`,
             activeStaff)
     } catch (error) {
@@ -236,7 +355,7 @@ export const getActiveStaffByRoleController = async (req, res, next) => {
 // new for w
 
 // get all active staff grouped by role
- 
+
 
 // export const getAllActiveStaffController = async (req, res, next) => {
 //     try {
@@ -251,68 +370,88 @@ export const getActiveStaffByRoleController = async (req, res, next) => {
 //                 isActive: true
 //             }).select('fullName email phoneNumber username')
 //                 .sort({ fullName: 1 });
-                 
-    export const getAllActiveStaffController = async (req, res, next) => {
-        try {
-            const Staff = (await import('../models/staff.js')).default;
-            const roles = ['Waiter', 'Kitchen', 'Cashier', 'Manager', 'Admin', 'Owner'];
-            
-            
-            const activeStaffByRole = {};
-             for (const role of roles) {
-                const staff = await Staff.find({
-                    role: role,
-                    isActive: true
-              }).select('fullName email phoneNumber username')
-                    .sort({fullName: 1 });
-            
-        
-               activeStaffByRole[role.toLowerCase()] = staff.map(s => ({
-                   id: s._id,
-                   name: s.fullName,
-                   email: s.email,
-                   phoneNumber: s.phoneNumber,
-                   username: s.username
-               }));
-          }
-        //     activeStaffByRole[role.toLowerCase()] = staff.map(s => ({
-        //         id: s._id,
-        //         name: s.fullName,
-        //         email: s.email,
-        //         phoneNumber: s.phoneNumber,
-        //         username: s.username
-        //     }));
-        // }
 
-//         sendSuccess(res, "Active staff by role retrieved successfully", {
-//             roles: activeStaffByRole,
-//             summary: Object.keys(activeStaffByRole).reduce((acc, role) => {
-//                 acc[role] = activeStaffByRole[role].length;
-//                 return acc;
-//             }, {})
-//         });
-//     } catch (error) {
-//         next(error);
-//     }
-// };
+export const getAllActiveStaffController = async (req, res, next) => {
+    try {
+        //new
+        const Staff = (await import('../models/staff.js')).default;
+        const User = (await import('../models/user.js')).default;
+        const Restaurant = (await import('../models/restaurant.js')).default;
 
-          sendSuccess(res, "Active staff by roll retrieved successfully", {
-                roles: activeStaffByRole,
-                summery: Object.keys(activeStaffByRole).reduce((acc, role) => {
-                     acc[role] = activeStaffByRole[role].length;
-                     return acc;
-                }, {})
-            });
-        } catch (error) {
-            next(error);
+        let restaurantId = null;
+        const user = await User.findById(req.user.userId);
+        if (user && user.restaurantId) {
+            restaurantId = user.restaurantId;
+        } else if (user) {
+            const restaurant = await Restaurant.findByOwner(user._id);
+            if (restaurant) {
+                restaurantId = restaurant._id;
+            } else {
+                const staff = await Staff.findById(req.user.userId);
+                if (staff && staff.restaurantId) {
+                    restaurantId = staff.restaurantId;
+                }
+            }
+        } else {
+            const staff = await Staff.findById(req.user.userId);
+            if (staff && staff.restaurantId) {
+                restaurantId = staff.restaurantId;
+            }
         }
-    };
-    
+
+        if (!restaurantId) {
+            return sendSuccess(res, "Active staff by roll retrieved successfully", {
+                roles: {
+                    waiter: [], kitchen: [], cashier: [], manager: [], admin: [], owner: []
+                },
+                summery: {
+                    waiter: 0, kitchen: 0, cashier: 0, manager: 0, admin: 0, owner: 0
+                }
+            });
+        }
+
+        //end
+        const roles = ['Waiter', 'Kitchen', 'Cashier', 'Manager', 'Admin', 'Owner'];
+
+        const activeStaffByRole = {};
+        for (const role of roles) {
+            const query = {
+                role: role,
+                isActive: true
+            };
+            if (restaurantId) {
+                query.restaurantId = restaurantId;
+            }
+            const staff = await Staff.find(query).select('fullName email phoneNumber username')
+                .sort({ fullName: 1 });
+
+
+            activeStaffByRole[role.toLowerCase()] = staff.map(s => ({
+                id: s._id,
+                name: s.fullName,
+                email: s.email,
+                phoneNumber: s.phoneNumber,
+                username: s.username
+            }));
+        }
+
+        sendSuccess(res, "Active staff by roll retrieved successfully", {
+            roles: activeStaffByRole,
+            summery: Object.keys(activeStaffByRole).reduce((acc, role) => {
+                acc[role] = activeStaffByRole[role].length;
+                return acc;
+            }, {})
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // end
 
 // get current user info(for debugging authentication issues)
- 
- 
+
+
 export const getCurrentUserController = async (req, res, next) => {
     try {
 

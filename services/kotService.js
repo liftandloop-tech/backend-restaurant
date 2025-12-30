@@ -11,7 +11,7 @@ import { AppError } from "../utils/errorHandler.js";
 
 
 
-    export const createKOT = async (orderId,station,userId,userRole,restaurantId) => {
+export const createKOT = async (orderId, station, userId, userRole, restaurantId) => {
   //validate that active staff can create kots
   const Staff = (await import('../models/staff.js')).default;
   const User = (await import('../models/user.js')).default
@@ -21,24 +21,24 @@ import { AppError } from "../utils/errorHandler.js";
 
   //try to find staff first
   staffMember = await Staff.findById(userId);
-          if(!staffMember){
+  if (!staffMember) {
     userMember = await User.findById(userId)
-          if(!userMember){
-            throw new AppError(`User not found with ID: ${userId}`,404)
+    if (!userMember) {
+      throw new AppError(`User not found with ID: ${userId}`, 404)
     }
     // for users (owner/admin/manager), they can always create KOTs
 
-          }else{
+  } else {
     // for staff mamber check if active
-            if(!staffMember.isActive){
-              throw new AppError(`Staff member ${staffMember.fullName} is not active. Please contact your manager.`,403);
+    if (!staffMember.isActive) {
+      throw new AppError(`Staff member ${staffMember.fullName} is not active. Please contact your manager.`, 403);
     }
   }
 
   // validate role permission for creating kots(only cashier and above)
-          const allowedRoles = ['Cashier','Manager','Admin','Owner']
-          if(!allowedRoles.includes(userRole)){
-            throw new AppError("Only cashier and above can create KOTs",403)
+  const allowedRoles = ['Cashier', 'Manager', 'Admin', 'Owner']
+  if (!allowedRoles.includes(userRole)) {
+    throw new AppError("Only cashier and above can create KOTs", 403)
   }
 
   const order = await Order.findById(orderId);
@@ -82,11 +82,11 @@ import { AppError } from "../utils/errorHandler.js";
 
 
 
-export const  getKOTs = async (filters = {}, userRole) => {
+export const getKOTs = async (filters = {}, userRole) => {
   // validate that kitchen staff, cashiers, waiters, and managers can view kots
-  const allowedRoles = ['Kitchen','Cashier','Waiter','Manager','Admin','Owner'];
-  if(!allowedRoles.includes(userRole)){
-    throw new AppError("You dont have permission to view KOTs",403)
+  const allowedRoles = ['Kitchen', 'Cashier', 'Waiter', 'Manager', 'Admin', 'Owner'];
+  if (!allowedRoles.includes(userRole)) {
+    throw new AppError("You dont have permission to view KOTs", 403)
   }
 
   const query = {};
@@ -112,7 +112,7 @@ export const  getKOTs = async (filters = {}, userRole) => {
   // Add table status information to each KOT
   const kotsWithTableStatus = await Promise.all(kots.map(async (kot) => {
     if (kot.orderId && kot.orderId.tableNumber) {
-      const table = await Table.findOne({ tableNumber: kot.orderId.tableNumber }).lean();
+      const table = await Table.findOne({ tableNumber: kot.orderId.tableNumber, restaurantId: kot.restaurantId || filters.restaurantId }).lean();
       if (table) {
         kot.tableStatus = table.status;
         kot.tableCapacity = table.capacity;
@@ -125,7 +125,7 @@ export const  getKOTs = async (filters = {}, userRole) => {
   return kotsWithTableStatus;
 };
 // end
-export const getKOTById = async (kotId) => {
+export const getKOTById = async (kotId, restaurantId) => {
   const kot = await KOT.findById(kotId)
     .populate({          // new
       path: 'orderId',
@@ -140,10 +140,17 @@ export const getKOTById = async (kotId) => {
   if (!kot) {
     throw new AppError("KOT not found", 404);
   }
+
+  // Ensure KOT belongs to restaurant
+  if (restaurantId && kot.restaurantId && kot.restaurantId.toString() !== restaurantId.toString()) {
+    throw new AppError("You don't have permission to view this KOT", 403);
+  }
+
   // new for w
   // Add table status information
   if (kot.orderId && kot.orderId.tableNumber) {
-    const table = await Table.findOne({ tableNumber: kot.orderId.tableNumber }).lean();
+    // Use kot.restaurantId for safety
+    const table = await Table.findOne({ tableNumber: kot.orderId.tableNumber, restaurantId: kot.restaurantId }).lean();
     if (table) {
       kot.tableStatus = table.status;
       kot.tableCapacity = table.capacity;
@@ -156,11 +163,11 @@ export const getKOTById = async (kotId) => {
 //end
 //new for w
 
-export const updateKOTStatus = async (kotId,status ,userId,userRole,restaurantId) => {
+export const updateKOTStatus = async (kotId, status, userId, userRole, restaurantId) => {
   // validate role permission for updating kot status - allow all active staff based on their roles
-  const allowedRoles = ['Kitchen','Waiter','Cashier','Manager','Admin','Owner'];
-  if(!allowedRoles.includes(userRole)){
-    throw new AppError("You dont have permission to update kot status",403)
+  const allowedRoles = ['Kitchen', 'Waiter', 'Cashier', 'Manager', 'Admin', 'Owner'];
+  if (!allowedRoles.includes(userRole)) {
+    throw new AppError("You dont have permission to update kot status", 403)
   }
 
   // Role-based status update validation - each role can update specific statuses
@@ -174,8 +181,8 @@ export const updateKOTStatus = async (kotId,status ,userId,userRole,restaurantId
   };
   //end
   const userAllowedStatuses = allowedStatuses[userRole] || [];
-  if(!userAllowedStatuses.includes(status)){
-    throw new AppError(`Your role (${userRole}) cannot update KOTs to '${status}' status. Allowed statuses: ${userAllowedStatuses.join(', ')}`,403)
+  if (!userAllowedStatuses.includes(status)) {
+    throw new AppError(`Your role (${userRole}) cannot update KOTs to '${status}' status. Allowed statuses: ${userAllowedStatuses.join(', ')}`, 403)
   }
 
   // Check if user is active staff (for Staff model) or valid user (for User model)
@@ -185,16 +192,16 @@ export const updateKOTStatus = async (kotId,status ,userId,userRole,restaurantId
   let staffMember = await Staff.findById(userId);
   let userMember = null;
 
-  if(!staffMember) {
+  if (!staffMember) {
     // Check if it's a User (Admin, Owner, Manager)
     userMember = await User.findById(userId);
-    if(!userMember) {
+    if (!userMember) {
       throw new AppError("User not found", 404);
     }
     // Users (Manager, Admin, Owner) can always update KOT status
   } else {
     // For staff members (Kitchen, Waiter, Cashier), check if active
-    if(!staffMember.isActive) {
+    if (!staffMember.isActive) {
       throw new AppError("Only active staff can update KOT status", 403);
     }
   }
@@ -298,7 +305,7 @@ export const markKOTPrinted = async (kotId, userId, userRole, restaurantId) => {
   return kot;
 };
 //end
-export const getKOTsByStatus = async (status, userRole) => {
+export const getKOTsByStatus = async (status, userRole, restaurantId) => {
   // Validate user permissions
   const allowedRoles = ['Kitchen', 'Cashier', 'Manager', 'Admin', 'Owner'];
   if (!allowedRoles.includes(userRole)) {
@@ -306,7 +313,7 @@ export const getKOTsByStatus = async (status, userRole) => {
   }
 
   // Define status-based queries
-  let query = { status };
+  let query = { status, restaurantId };
 
   // Role-based filtering
   if (userRole === 'Kitchen') {
@@ -338,7 +345,7 @@ export const getKOTsByStatus = async (status, userRole) => {
   // Add table status information to each KOT
   const kotsWithTableStatus = await Promise.all(kots.map(async (kot) => {
     if (kot.orderId && kot.orderId.tableNumber) {
-      const table = await Table.findOne({ tableNumber: kot.orderId.tableNumber }).lean();
+      const table = await Table.findOne({ tableNumber: kot.orderId.tableNumber, restaurantId }).lean();
       if (table) {
         kot.tableStatus = table.status;
         kot.tableCapacity = table.capacity;
@@ -351,14 +358,18 @@ export const getKOTsByStatus = async (status, userRole) => {
   return kotsWithTableStatus;
 };
 // end
-export const getKOTsForOrder = async (orderId, userRole) => {
+export const getKOTsForOrder = async (orderId, userRole, restaurantId) => {
   // Validate user permissions
   const allowedRoles = ['Waiter', 'Cashier', 'Kitchen', 'Manager', 'Admin', 'Owner'];
   if (!allowedRoles.includes(userRole)) {
     throw new AppError("You don't have permission to view KOTs", 403);
   }
   //new for w
-  const kots = await KOT.find({ orderId })
+  // Ensure we search by orderId AND restaurantId to prevent data leakage
+  const query = { orderId };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const kots = await KOT.find(query)
     .populate({
       path: 'orderId',
       select: 'orderNumber tableNumber items customerId status',
@@ -376,7 +387,7 @@ export const getKOTsForOrder = async (orderId, userRole) => {
   // Add table status information to each KOT
   const kotsWithTableStatus = await Promise.all(kots.map(async (kot) => {
     if (kot.orderId && kot.orderId.tableNumber) {
-      const table = await Table.findOne({ tableNumber: kot.orderId.tableNumber }).lean();
+      const table = await Table.findOne({ tableNumber: kot.orderId.tableNumber, restaurantId }).lean();
       if (table) {
         kot.tableStatus = table.status;
         kot.tableCapacity = table.capacity;
@@ -389,7 +400,7 @@ export const getKOTsForOrder = async (orderId, userRole) => {
   return kotsWithTableStatus;
 };
 
-export const updateKOTItems = async (kotId, items, userId, userRole,restaurantId) => {
+export const updateKOTItems = async (kotId, items, userId, userRole, restaurantId) => {
   // Only kitchen staff can update KOT items
   const allowedRoles = ['Kitchen', 'Manager', 'Admin', 'Owner'];
   if (!allowedRoles.includes(userRole)) {

@@ -139,13 +139,28 @@ export const createOrder = async (orderData, userId, userRole) => {
     status: status || 'pending',   // new for w
     restaurantId: restaurantId
   };
-
+  //new
   // Only set tableNumber for dine-in and takeaway orders
   // for phone and online oreders ,excplicitly amit tableNumber
+  // Only set tableNumber for dine-in and takeaway orders
+  // for phone and online orders, explicitly omit tableNumber
   if (normalizedSource === 'dine-in' || normalizedSource === 'takeaway') {
     if (!tableNumber) {
-      throw new AppError('Table number is required and must be atleast 1for dine-in and takeaway orders', 400)
+      throw new AppError('Table number is required and must be at least 1 for dine-in and takeaway orders', 400);
     }
+
+    // Verify table exists for dine-in
+    if (normalizedSource === 'dine-in') {
+      const existingTable = await Table.findOne({
+        tableNumber: tableNumber,
+        restaurantId: restaurantId
+      });
+
+      if (!existingTable) {
+        throw new AppError(`Table ${tableNumber} does not exist in this restaurant. Please create the table first or choose a valid table.`, 404);
+      }
+    }
+
     newOrderData.tableNumber = tableNumber;
   }
 
@@ -196,6 +211,8 @@ export const getOrders = async (filters = {}, userId, userRole) => {
   if (filters.source) query.source = filters.source;
   if (filters.waiterId) query.waiterId = filters.waiterId;
   if (filters.customerId) query.customerId = filters.customerId;
+  if (filters.restaurantId) query.restaurantId = filters.restaurantId; // Filter by restaurantId
+
   if (filters.startDate || filters.endDate) {
     query.createdAt = {};
     if (filters.startDate) query.createdAt.$gte = new Date(filters.startDate);
@@ -216,8 +233,11 @@ export const getOrders = async (filters = {}, userId, userRole) => {
     .lean();
 };
 
-export const getOrderById = async (orderId) => {
-  const order = await Order.findById(orderId)
+export const getOrderById = async (orderId, restaurantId) => {
+  const query = { _id: orderId };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const order = await Order.findOne(query)
     .populate('waiterId', 'name email');
 
   if (!order) {
@@ -227,8 +247,11 @@ export const getOrderById = async (orderId) => {
   return order;
 };
 
-export const updateOrder = async (orderId, updateData, userId) => {
-  const order = await Order.findById(orderId);
+export const updateOrder = async (orderId, updateData, userId, restaurantId) => {
+  const query = { _id: orderId };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const order = await Order.findOne(query);
 
   if (!order) {
     throw new AppError("Order not found", 404);
@@ -250,8 +273,11 @@ export const updateOrder = async (orderId, updateData, userId) => {
 };
 
 // export const updateOrderStatus = async (orderId, status, userId, userRole) => {
-export const updateOrderStatus = async (orderId, status, userId, userRole) => {
-  const order = await Order.findById(orderId);
+export const updateOrderStatus = async (orderId, status, userId, userRole, restaurantId) => {
+  const query = { _id: orderId };
+  if (restaurantId) query.restaurantId = restaurantId;
+
+  const order = await Order.findOne(query);
 
   if (!order) {
     throw new AppError("Order not found", 404);
@@ -312,7 +338,7 @@ export const updateOrderStatus = async (orderId, status, userId, userRole) => {
   return await Order.findById(order._id).populate("waiterId", "fullName email role")
 }
 
-export const confirmOrder = async (orderId, userId, userRole) => {
+export const confirmOrder = async (orderId, userId, userRole, restaurantId) => {
   // validate that only active staff can confirm orders
   const Staff = (await import('../models/staff.js')).default;
   const User = (await import('../models/user.js')).default;
@@ -342,9 +368,12 @@ export const confirmOrder = async (orderId, userId, userRole) => {
   if (!allowedRoles.includes(userRole)) {
     throw new AppError(`Role '${userRole}' does not have permission to confirm orders`, 403);
   }
+  //new
+  const query = { _id: orderId };
+  if (restaurantId) query.restaurantId = restaurantId;
 
-  const order = await Order.findById(orderId);
-
+  const order = await Order.findOne(query);
+  //end
   if (!order) {
     throw new AppError("Order not found", 404);
   }
@@ -392,6 +421,14 @@ export const confirmOrder = async (orderId, userId, userRole) => {
     // Don't fail the order confirmation if KOT creation fails
   }
 
+  // Deduct inventory stock
+  try {
+    const inventoryService = await import('../services/inventoryService.js');
+    await inventoryService.deductStockForOrder(order._id);
+  } catch (error) {
+    console.error('Failed to deduct inventory stock:', error);
+  }
+
   // Update table status to 'serving' when order is confirmed
   try {
     await Table.findOneAndUpdate(
@@ -411,7 +448,7 @@ export const confirmOrder = async (orderId, userId, userRole) => {
     .populate('customerId', 'name phone email')
 };
 // new for w
-export const getOrdersByStatus = async (status, userId, userRole) => {
+export const getOrdersByStatus = async (status, userId, userRole, restaurantId) => {
   // Validate user permissions
   const allowedRoles = ['Waiter', 'Kitchen', 'Cashier', 'Manager', 'Admin', 'Owner'];
   if (!allowedRoles.includes(userRole)) {
@@ -420,6 +457,11 @@ export const getOrdersByStatus = async (status, userId, userRole) => {
 
   // Build query based on status and user role
   let query = { status };
+
+  // Add restaurantId filter
+  if (restaurantId) {
+    query.restaurantId = restaurantId;
+  }
 
   // Role-based filtering
   if (userRole === 'Waiter') {
@@ -442,9 +484,13 @@ export const getOrdersByStatus = async (status, userId, userRole) => {
     .lean();
 };
 //end
-export const cancelOrder = async (orderId, reason, userId) => {
-  const order = await Order.findById(orderId);
+//new
+export const cancelOrder = async (orderId, reason, userId, restaurantId) => {
+  const query = { _id: orderId };
+  if (restaurantId) query.restaurantId = restaurantId;
 
+  const order = await Order.findOne(query);
+  //end
   if (!order) {
     throw new AppError("Order not found", 404);
   }
@@ -459,6 +505,24 @@ export const cancelOrder = async (orderId, reason, userId) => {
   order.cancellationReason = reason;
 
   await order.save();
+//new
+  // Cancel associated KOTs
+  try {
+    const KOT = (await import('../models/KOT.js')).default;
+    await KOT.updateMany(
+      { orderId: order._id },
+      { $set: { status: 'cancelled' } }
+    );
+  } catch (kotError) {
+    console.error('Failed to cancel KOTs for order:', order._id, kotError);
+  }
+
+  // If order was confirmed/serving, free the table?
+  // User didn't explicitly ask to free the table on cancel, but "change apply for every users".
+  // Valid logic: If order cancelled, table should be 'available' or 'cleaning'.
+  // But strictly following user: "if order cancelled so kot should decline or mak deactive".
+  // User didn't mention table logic for cancel, only for "served".
+  // I will just do KOT cancellation.
 
   return await Order.findById(order._id).populate('waiterId', 'name email');
 };

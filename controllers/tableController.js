@@ -1,112 +1,70 @@
 import * as tableService from "../services/tableService.js";
 import { sendSuccess } from "../utils/response.js";
 
-// const{sendSuccess}=require('../utils/response.js')
-// const tableService=require('../services/tableService.js')
+// Helper to resolve restaurantId
+const resolveRestaurantId = async (userId) => {
+  // Dynamic imports to avoid potential circular dependency issues
+  const User = (await import('../models/user.js')).default;
+  const Staff = (await import('../models/staff.js')).default;
+  const Restaurant = (await import('../models/restaurant.js')).default;
+
+  let restaurantId = null;
+  const user = await User.findById(userId);
+  if (user && user.restaurantId) {
+    restaurantId = user.restaurantId;
+  } else if (user) {
+    const restaurant = await Restaurant.findByOwner(user._id);
+    if (restaurant) {
+      restaurantId = restaurant._id;
+    } else {
+      const staff = await Staff.findById(userId);
+      if (staff && staff.restaurantId) {
+        restaurantId = staff.restaurantId;
+      }
+    }
+  } else {
+    const staff = await Staff.findById(userId);
+    if (staff && staff.restaurantId) {
+      restaurantId = staff.restaurantId;
+    }
+  }
+  return restaurantId;
+};
 
 export const getTables = async (req, res, next) => {
   try {
-    // new for w
-    // Get restaurantId from user
-//     const User = (await import('../models/user.js')).default;
-//     const Staff = (await import('../models/staff.js')).default;
-//     const Restaurant = (await import('../models/restaurant.js')).default;
+    const restaurantId = await resolveRestaurantId(req.user.userId);
 
-//     let restaurantId = req.user.restaurantId;
-
-//     if (!restaurantId) {
-//       // First try to get restaurantId from the user model (full fetch)
-//       const user = await User.findById(req.user.userId);
-//       if (user && user.restaurantId) {
-//         restaurantId = user.restaurantId;
-//       } else {
-//         // If user doesn't have restaurantId, check if they're the owner
-//         const restaurant = await Restaurant.findByOwner(req.user.userId);
-//         if (restaurant) {
-//           restaurantId = restaurant._id;
-//         } else {
-//           // Try staff lookup as fallback
-//           const staff = await Staff.findById(req.user.userId);
-//           if (staff && staff.restaurantId) {
-//             restaurantId = staff.restaurantId;
-//           }
-//         }
-//       }
-//     }
-
-//     // Clean filters: remove "undefined", "null", "all" strings which might come from frontend
-//     const cleanQuery = {};
-//     Object.keys(req.query).forEach(key => {
-//       const val = req.query[key];
-//       if (val !== undefined && val !== null && val !== 'undefined' && val !== 'null' && val !== 'all' && val !== '') {
-//         cleanQuery[key] = val;
-//       }
-//     });
-
-//     const filters = {
-//       ...cleanQuery,
-//       restaurantId: restaurantId
-//     };
-
-//     const tables = await tableService.getTables(filters);
-//     sendSuccess(res, "Tables retrieved successfully", tables);
-//   } catch (error) {
-//     next(error);
-//   }
-// };
-
-  const User = (await import('../models/user.js')).default
-        const Staff = (await import('../models/staff.js')).default
-        const Restaurant = (await import('../models/restaurant.js')).default
-
-        let restaurantId = null;
-
-
-        // First try to get restaurantId from the user model
-        const user = await User.findById(req.user.userId);
-        if (user && user.restaurantId) {
-           restaurantId = user.restaurantId;
-
-        } else {
-      //If user doesn't have restaurant check if they have the Owner
-        const restaurant = await Restaurant.findByOwner(req, user.userId);
-        if (restaurant) {
-           restaurantId = restaurant._id;
-
-        } else {
-        //Try staff lookup as fallback 
-        const staff = await Staff.findById(req.user.userId);
-        if (staff && staff.restaurantId) {
-          restaurantId = staff.restaurantId;
-        }
+    // Clean filters: remove "undefined", "null", "all" strings which might come from frontend
+    const cleanQuery = {};
+    Object.keys(req.query).forEach(key => {
+      const val = req.query[key];
+      if (val !== undefined && val !== null && val !== 'undefined' && val !== 'null' && val !== 'all' && val !== '') {
+        cleanQuery[key] = val;
       }
+    });
+
+    if (!restaurantId) {
+      return sendSuccess(res, "Tables retrieved successfully", []);
     }
 
-       // clean filters
-       const cleanQuery = {};
-       Object.keys(req.query).forEach(key=> {
-        const val = req.query[key];
-        if (val !== undefined && val !== null && val !== 'undefined' && val !== 'null' && val !== 'all' && val !== ''){
-          cleanQuery[key] = val;
-        }
-       });
-    
-         const filters = {
-          ...cleanQuery,
-          restuarantId: restaurantId
-         };
+    const filters = {
+      ...cleanQuery,
+      restaurantId: restaurantId
+    };
 
-         
-       const tables  = await tableService.getTables(filters);
-       sendSuccess(res, "Tables retrieved successfully ", tables);
-     } catch(error) {
-       next(error);
-     } 
-   }; 
+
+    const tables = await tableService.getTables(filters);
+    sendSuccess(res, "Tables retrieved successfully ", tables);
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const getTableById = async (req, res, next) => {
   try {
-    const table = await tableService.getTableById(req.params.id);
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const table = await tableService.getTableById(req.params.id, restaurantId);
     sendSuccess(res, "Table retrieved successfully", table);
   } catch (error) {
     next(error);
@@ -124,7 +82,7 @@ export const createTable = async (req, res, next) => {
       ...req.body,
       restaurantId: restaurant._id
     };
-    // end 
+
     const table = await tableService.createTable(tableData);
     sendSuccess(res, "Table created successfully", table, 201);
   } catch (error) {
@@ -134,32 +92,7 @@ export const createTable = async (req, res, next) => {
 
 export const updateTable = async (req, res, next) => {
   try {
-    //new for w
-    // Get restaurantId from user to ensure they can only update tables from their restaurant
-    const User = (await import('../models/user.js')).default;
-    const Staff = (await import('../models/staff.js')).default;
-    const Restaurant = (await import('../models/restaurant.js')).default;
-
-    let restaurantId = null;
-
-    // First try to get restaurantId from the user model
-    const user = await User.findById(req.user.userId);
-    if (user && user.restaurantId) {
-      restaurantId = user.restaurantId;
-    } else {
-      // If user doesn't have restaurantId, check if they're the owner
-      const restaurant = await Restaurant.findByOwner(req.user.userId);
-      if (restaurant) {
-        restaurantId = restaurant._id;
-      } else {
-        // Try staff lookup as fallback
-        const staff = await Staff.findById(req.user.userId);
-        if (staff && staff.restaurantId) {
-          restaurantId = staff.restaurantId;
-        }
-      }
-    }
-
+    const restaurantId = await resolveRestaurantId(req.user.userId);
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
     }
@@ -173,31 +106,7 @@ export const updateTable = async (req, res, next) => {
 
 export const updateTableStatus = async (req, res, next) => {
   try {
-    // Get restaurantId from user
-    const User = (await import('../models/user.js')).default;
-    const Staff = (await import('../models/staff.js')).default;
-    const Restaurant = (await import('../models/restaurant.js')).default;
-
-    let restaurantId = null;
-
-    // First try to get restaurantId from the user model
-    const user = await User.findById(req.user.userId);
-    if (user && user.restaurantId) {
-      restaurantId = user.restaurantId;
-    } else {
-      // If user doesn't have restaurantId, check if they're the owner
-      const restaurant = await Restaurant.findByOwner(req.user.userId);
-      if (restaurant) {
-        restaurantId = restaurant._id;
-      } else {
-        // Try staff lookup as fallback
-        const staff = await Staff.findById(req.user.userId);
-        if (staff && staff.restaurantId) {
-          restaurantId = staff.restaurantId;
-        }
-      }
-    }
-
+    const restaurantId = await resolveRestaurantId(req.user.userId);
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
     }
@@ -212,31 +121,7 @@ export const updateTableStatus = async (req, res, next) => {
 
 export const transferTable = async (req, res, next) => {
   try {
-    // Get restaurantId from user
-    const User = (await import('../models/user.js')).default;
-    const Staff = (await import('../models/staff.js')).default;
-    const Restaurant = (await import('../models/restaurant.js')).default;
-
-    let restaurantId = null;
-
-    // First try to get restaurantId from the user model
-    const user = await User.findById(req.user.userId);
-    if (user && user.restaurantId) {
-      restaurantId = user.restaurantId;
-    } else {
-      // If user doesn't have restaurantId, check if they're the owner
-      const restaurant = await Restaurant.findByOwner(req.user.userId);
-      if (restaurant) {
-        restaurantId = restaurant._id;
-      } else {
-        // Try staff lookup as fallback
-        const staff = await Staff.findById(req.user.userId);
-        if (staff && staff.restaurantId) {
-          restaurantId = staff.restaurantId;
-        }
-      }
-    }
-
+    const restaurantId = await resolveRestaurantId(req.user.userId);
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
     }
@@ -248,33 +133,10 @@ export const transferTable = async (req, res, next) => {
     next(error);
   }
 };
+
 export const completeCleaning = async (req, res, next) => {
   try {
-    // Get restaurantId from user
-    const User = (await import('../models/user.js')).default;
-    const Staff = (await import('../models/staff.js')).default;
-    const Restaurant = (await import('../models/restaurant.js')).default;
-
-    let restaurantId = null;
-
-    // First try to get restaurantId from the user model
-    const user = await User.findById(req.user.userId);
-    if (user && user.restaurantId) {
-      restaurantId = user.restaurantId;
-    } else {
-      // If user doesn't have restaurantId, check if they're the owner
-      const restaurant = await Restaurant.findByOwner(req.user.userId);
-      if (restaurant) {
-        restaurantId = restaurant._id;
-      } else {
-        // Try staff lookup as fallback
-        const staff = await Staff.findById(req.user.userId);
-        if (staff && staff.restaurantId) {
-          restaurantId = staff.restaurantId;
-        }
-      }
-    }
-
+    const restaurantId = await resolveRestaurantId(req.user.userId);
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
     }
@@ -289,31 +151,7 @@ export const completeCleaning = async (req, res, next) => {
 
 export const deleteTable = async (req, res, next) => {
   try {
-    // Get restaurantId from user
-    const User = (await import('../models/user.js')).default;
-    const Staff = (await import('../models/staff.js')).default;
-    const Restaurant = (await import('../models/restaurant.js')).default;
-
-    let restaurantId = null;
-
-    // First try to get restaurantId from the user model
-    const user = await User.findById(req.user.userId);
-    if (user && user.restaurantId) {
-      restaurantId = user.restaurantId;
-    } else {
-      // If user doesn't have restaurantId, check if they're the owner
-      const restaurant = await Restaurant.findByOwner(req.user.userId);
-      if (restaurant) {
-        restaurantId = restaurant._id;
-      } else {
-        // Try staff lookup as fallback
-        const staff = await Staff.findById(req.user.userId);
-        if (staff && staff.restaurantId) {
-          restaurantId = staff.restaurantId;
-        }
-      }
-    }
-
+    const restaurantId = await resolveRestaurantId(req.user.userId);
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
     }
@@ -323,5 +161,4 @@ export const deleteTable = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};// end
-
+};

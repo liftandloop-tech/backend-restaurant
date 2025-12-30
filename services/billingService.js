@@ -16,9 +16,9 @@ import * as restaurantService from "./restaurantService.js";
 // const {checkIdempotency,storeIdempotency} = require('../utils/idempotency.js')
 
 
-  export const createBill = async (orderId, cashierId, idempotencyKey,cashierRole) => {
+export const createBill = async (orderId, cashierId, idempotencyKey, cashierRole) => {
   //const order = await Order.findById(orderId).populate('customerId', 'name phone email');
-  const order = await Order.findById(orderId).populate('customerId','name email phone')
+  const order = await Order.findById(orderId).populate('customerId', 'name email phone')
 
   if (!order) {
     throw new AppError("Order not found", 404);
@@ -29,96 +29,96 @@ import * as restaurantService from "./restaurantService.js";
   }
 
   //new for w
-       //Validate that only active cashier/manager can create bills
-       const Staff = (await import('../models/staff.js')).default
-       const User = (await import('../models/user.js')).default
+  //Validate that only active cashier/manager can create bills
+  const Staff = (await import('../models/staff.js')).default
+  const User = (await import('../models/user.js')).default
 
-       let cashier = null;
-       let user = null;
+  let cashier = null;
+  let user = null;
 
-       // Try to find as staff first
-       cashier = await Staff.findById(cashierId);
+  // Try to find as staff first
+  cashier = await Staff.findById(cashierId);
 
-       // If not found as staff, try as user (for manager/admin/owner)
-       if(!cashier){
-         user = await User.findById(cashierId);
-         if(!user){
-           throw new AppError(`Staff/User not found with ID: ${cashierId}`, 404);
-         }
-       }else{
-         // For staff members, check if active
-         if(!cashier.isActive){
-           throw new AppError(`Staff member ${cashier.fullName} is not active. Please contact your manager.`, 403);
-         }
-       }
+  // If not found as staff, try as user (for manager/admin/owner)
+  if (!cashier) {
+    user = await User.findById(cashierId);
+    if (!user) {
+      throw new AppError(`Staff/User not found with ID: ${cashierId}`, 404);
+    }
+  } else {
+    // For staff members, check if active
+    if (!cashier.isActive) {
+      throw new AppError(`Staff member ${cashier.fullName} is not active. Please contact your manager.`, 403);
+    }
+  }
 
-       // Validate role permissions for creating bills
-       const allowedRoles = ['Cashier', 'Manager', 'Admin', 'Owner'];
-       if(!allowedRoles.includes(cashierRole)) {
-         throw new AppError(`Role '${cashierRole}' does not have permission to create bills`, 403);
-       }
-       // end
+  // Validate role permissions for creating bills
+  const allowedRoles = ['Cashier', 'Manager', 'Admin', 'Owner'];
+  if (!allowedRoles.includes(cashierRole)) {
+    throw new AppError(`Role '${cashierRole}' does not have permission to create bills`, 403);
+  }
+  // end
   // Check if bill already exists
   const existingBill = await Bill.findOne({ orderId });
   if (existingBill) {
     return existingBill;
   }
-  
-  if(idempotencyKey){
-const existingBillBykey =await Bill.findOne({idempotencyKey});
-if(existingBillBykey){
-  return await Bill.findById(existingBillBykey._id)
-  .populate('orderId')
-  //.populate('customerId', 'name phone email') // Include customer information
-  .populate('customerId, name email phone') //include customer information
-  .populate('cashierId','name email')
- }
-}   //new for w
-    // Determine restaurantId from the order or cashier
-    let restaurantId = null;
-    if (order.restaurantId) {
-      restaurantId = order.restaurantId;
-    } else if (user && user.restaurantId) {
-      restaurantId = user.restaurantId;
-    } else if (cashier && cashier.restaurantId) {
-      restaurantId = cashier.restaurantId;
+
+  if (idempotencyKey) {
+    const existingBillBykey = await Bill.findOne({ idempotencyKey });
+    if (existingBillBykey) {
+      return await Bill.findById(existingBillBykey._id)
+        .populate('orderId')
+        //.populate('customerId', 'name phone email') // Include customer information
+        .populate('customerId, name email phone') //include customer information
+        .populate('cashierId', 'name email')
     }
-// end
-try{
+  }   //new for w
+  // Determine restaurantId from the order or cashier
+  let restaurantId = null;
+  if (order.restaurantId) {
+    restaurantId = order.restaurantId;
+  } else if (user && user.restaurantId) {
+    restaurantId = user.restaurantId;
+  } else if (cashier && cashier.restaurantId) {
+    restaurantId = cashier.restaurantId;
+  }
+  // end
+  try {
     const bill = await Bill.create({
-    orderId,
-    //customerId: order.customerId || null, // Include customer ID from order
-   customerId: order.customerId || null, //include customer id from order
-    subtotal: order.subtotal,
-    tax: order.tax,
-    discount: 0,
-    total: order.total,
-    cashierId,
-    restaurantId: restaurantId,
-    idempotencyKey:idempotencyKey||null
-  });
+      orderId,
+      //customerId: order.customerId || null, // Include customer ID from order
+      customerId: order.customerId || null, //include customer id from order
+      subtotal: order.subtotal,
+      tax: order.tax,
+      discount: 0,
+      total: order.total,
+      cashierId,
+      restaurantId: restaurantId,
+      idempotencyKey: idempotencyKey || null
+    });
 
 
     const populatedBill = await Bill.findById(bill._id)
-    // new for w
-    .populate('orderId', 'orderNumber tableNumber source items subtotal tax discount total customerName customerPhone customerEmail deliveryAddress deliveryPhone deliveryTime')
-    .populate('customerId','name email phone') //Include customer infromation
-    .populate('cashierId','fullName email role')
-    return populatedBill
-}catch(error){
-  if(error.code===11000&& error.keyPattern.idempotencyKey){
-    const existingBillBykey= await Bill.findOne({idempotencyKey})
-    if(existingBillBykey){
-      return await Bill.findById(existingBillBykey._id)
-      // new for w only one
+      // new for w
       .populate('orderId', 'orderNumber tableNumber source items subtotal tax discount total customerName customerPhone customerEmail deliveryAddress deliveryPhone deliveryTime')
-      .populate('customerId','name email phone')
-      .populate('cashierId','fullName email role')
+      .populate('customerId', 'name email phone') //Include customer infromation
+      .populate('cashierId', 'fullName email role')
+    return populatedBill
+  } catch (error) {
+    if (error.code === 11000 && error.keyPattern.idempotencyKey) {
+      const existingBillBykey = await Bill.findOne({ idempotencyKey })
+      if (existingBillBykey) {
+        return await Bill.findById(existingBillBykey._id)
+          // new for w only one
+          .populate('orderId', 'orderNumber tableNumber source items subtotal tax discount total customerName customerPhone customerEmail deliveryAddress deliveryPhone deliveryTime')
+          .populate('customerId', 'name email phone')
+          .populate('cashierId', 'fullName email role')
+      }
     }
+    throw error
   }
-throw error
-}
-  };
+};
 
 export const processPayment = async (billId, paymentData, cashierId, idempotencyKey) => {
   // Check idempotency
@@ -126,23 +126,23 @@ export const processPayment = async (billId, paymentData, cashierId, idempotency
   if (cached) {
     return cached;
   }
-  
+
   const session = await mongoose.startSession();
   session.startTransaction();
-  
+
   try {
     const bill = await Bill.findById(billId).session(session);
-    
+
     if (!bill) {
       throw new AppError("Bill not found", 404);
     }
-    
+
     if (bill.paid) {
       throw new AppError("Bill already paid", 400);
     }
-    
+
     const { paymentMethod, transactionId, gatewayResponse } = paymentData;
-    
+
     // Create payment record
     const payment = await Payment.create([{
       billId: bill._id,
@@ -155,21 +155,21 @@ export const processPayment = async (billId, paymentData, cashierId, idempotency
       idempotencyKey,
       processedBy: cashierId
     }], { session });
-    
+
     // Update bill
     bill.paid = true;
     bill.paidAt = new Date();
     bill.paymentMethod = paymentMethod;
     bill.transactionId = transactionId || payment[0].paymentId;
     await bill.save({ session });
-    
+
     // Update order status if needed
     await Order.findByIdAndUpdate(
       bill.orderId,
       { status: 'completed' },
       { session }
     );
-// new for w
+    // new for w
     // Add bill amount to restaurant account
     try {
       // Use the restaurantId from the bill if available
@@ -197,17 +197,17 @@ export const processPayment = async (billId, paymentData, cashierId, idempotency
       // Don't fail the payment if restaurant account update fails
       console.error('Failed to update restaurant account:', restaurantError);
     }
-// end
+    // end
     await session.commitTransaction();
-    
+
     const result = {
       bill: await Bill.findById(bill._id).populate('orderId').populate('cashierId', 'name email'),
       payment: payment[0]
     };
-    
+
     // Store idempotency
     storeIdempotency(idempotencyKey, result);
-    
+
     return result;
   } catch (error) {
     await session.abortTransaction();
@@ -219,16 +219,18 @@ export const processPayment = async (billId, paymentData, cashierId, idempotency
 
 export const getBills = async (filters = {}) => {
   const query = {};
-  
+
   if (filters.paid !== undefined) query.paid = filters.paid;
   if (filters.paymentMethod) query.paymentMethod = filters.paymentMethod;
   if (filters.cashierId) query.cashierId = filters.cashierId;
+  if (filters.restaurantId) query.restaurantId = filters.restaurantId;
+
   if (filters.startDate || filters.endDate) {
     query.createdAt = {};
     if (filters.startDate) query.createdAt.$gte = new Date(filters.startDate);
     if (filters.endDate) query.createdAt.$lte = new Date(filters.endDate);
   }
-  
+
   return await Bill.find(query)
     .populate('orderId')
     .populate('cashierId', 'name email')
@@ -236,7 +238,7 @@ export const getBills = async (filters = {}) => {
     .lean();
 };
 
-export const getBillById = async (billId) => {
+export const getBillById = async (billId, restaurantId) => {
   const bill = await Bill.findById(billId)
     .populate('orderId', 'orderNumber tableNumber items subtotal tax discount total')
     .populate('cashierId', 'name email');
@@ -245,10 +247,15 @@ export const getBillById = async (billId) => {
     throw new AppError("Bill not found", 404);
   }
 
+  // Ensure bill belongs to restaurant
+  if (restaurantId && bill.restaurantId && bill.restaurantId.toString() !== restaurantId.toString()) {
+    throw new AppError("You don't have permission to view this bill", 403);
+  }
+
   return bill;
 };
 
-export const getBillsByCashier = async (cashierId, cashierRole) => {
+export const getBillsByCashier = async (cashierId, cashierRole, restaurantId) => {
   // Validate permissions
   const allowedRoles = ['Cashier', 'Manager', 'Admin', 'Owner'];
   if (!allowedRoles.includes(cashierRole)) {
@@ -256,6 +263,9 @@ export const getBillsByCashier = async (cashierId, cashierRole) => {
   }
 
   let query = {};
+  if (restaurantId) {
+    query.restaurantId = restaurantId;
+  }
 
   // Cashiers can only see bills they created
   if (cashierRole === 'Cashier') {
@@ -270,7 +280,7 @@ export const getBillsByCashier = async (cashierId, cashierRole) => {
     .lean();
 };
 
-export const processRefund = async (billId, refundAmount, reason, cashierId) => {
+export const processRefund = async (billId, refundAmount, reason, cashierId, restaurantId) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -279,6 +289,11 @@ export const processRefund = async (billId, refundAmount, reason, cashierId) => 
 
     if (!bill) {
       throw new AppError("Bill not found", 404);
+    }
+
+    // Ensure bill belongs to restaurant
+    if (restaurantId && bill.restaurantId && bill.restaurantId.toString() !== restaurantId.toString()) {
+      throw new AppError("You don't have permission to refund this bill", 403);
     }
 
     if (!bill.paid) {

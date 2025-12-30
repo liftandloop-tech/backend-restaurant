@@ -21,11 +21,16 @@ export const getTables = async (filters = {}) => {
   }).sort({ tableNumber: 1 });
 };
 
-export const getTableById = async (id) => {
+export const getTableById = async (id, restaurantId) => {
   const table = await Table.findById(id).populate('currentOrderId');
   if (!table) {
     throw new AppError("Table not found", 404);
   }
+
+  if (restaurantId && table.restaurantId && table.restaurantId.toString() !== restaurantId.toString()) {
+    throw new AppError("You don't have permission to view this table", 403);
+  }
+
   return table;
 };
 

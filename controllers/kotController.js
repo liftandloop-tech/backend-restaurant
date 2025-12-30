@@ -21,9 +21,9 @@ export const createKOT = async (req, res, next) => {
     if (user && user.restaurantId) {
       restaurantId = user.restaurantId;
 
-    } else {
+    } else if (user) {
       //If user doesn't have restaurant check if they have the Owner
-      const restaurant = await Restaurant.findByOwner(req, user.userId);
+      const restaurant = await Restaurant.findByOwner(user._id);
       if (restaurant) {
         restaurantId = restaurant._id;
 
@@ -33,8 +33,14 @@ export const createKOT = async (req, res, next) => {
         if (staff && staff.restaurantId) {
           restaurantId = staff.restaurantId;
         }
+      } //new
+    } else {
+      // User not found in User collection, try Staff
+      const staff = await Staff.findById(req.user.userId);
+      if (staff && staff.restaurantId) {
+        restaurantId = staff.restaurantId;
       }
-    }
+    }//end
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
     }
@@ -65,9 +71,8 @@ export const createKOTForOrder = async (req, res, next) => {
     if (user && user.restaurantId) {
       restaurantId = user.restaurantId;
 
-    } else {
-      //If user doesn't have restaurant check if they have the Owner
-      const restaurant = await Restaurant.findByOwner(req, user.userId);
+    } else if (user) {
+      const restaurant = await Restaurant.findByOwner(user._id);
       if (restaurant) {
         restaurantId = restaurant._id;
 
@@ -77,8 +82,14 @@ export const createKOTForOrder = async (req, res, next) => {
         if (staff && staff.restaurantId) {
           restaurantId = staff.restaurantId;
         }
+      }//new
+    } else {
+      // User not found in User collection, try Staff
+      const staff = await Staff.findById(req.user.userId);
+      if (staff && staff.restaurantId) {
+        restaurantId = staff.restaurantId;
       }
-    }
+    }//end
 
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
@@ -107,9 +118,9 @@ export const getKOTs = async (req, res, next) => {
     if (user && user.restaurantId) {
       restaurantId = user.restaurantId;
 
-    } else {
+    } else if (user) {
       //If user doesn't have restaurant check if they have the Owner
-      const restaurant = await Restaurant.findByOwner(req, user.userId);
+      const restaurant = await Restaurant.findByOwner(user._id);
       if (restaurant) {
         restaurantId = restaurant._id;
 
@@ -119,13 +130,24 @@ export const getKOTs = async (req, res, next) => {
         if (staff && staff.restaurantId) {
           restaurantId = staff.restaurantId;
         }
+      }//new
+    } else {
+      // User not found in User collection, try Staff
+      const staff = await Staff.findById(req.user.userId);
+      if (staff && staff.restaurantId) {
+        restaurantId = staff.restaurantId;
       }
-    }
+    }//end
 
     const filters = {
       ...req.query,
       restaurantId: restaurantId
     };
+    //new
+
+    if (!restaurantId) {
+      return sendSuccess(res, "KOTs retrieved successfully", []);
+    }
 
     const kots = await kotService.getKOTs(filters, req.user.role);
     sendSuccess(res, "KOTs retrieved successfully", kots);
@@ -133,10 +155,42 @@ export const getKOTs = async (req, res, next) => {
     next(error);
   }
 };
-
+//end
 export const getKOTById = async (req, res, next) => {
-  try {
-    const kot = await kotService.getKOTById(req.params.id);
+  try {//new
+    const User = (await import('../models/user.js')).default
+    const Staff = (await import('../models/staff.js')).default
+    const Restaurant = (await import('../models/restaurant.js')).default
+
+    let restaurantId = null;
+
+    const user = await User.findById(req.user.userId);
+    if (user && user.restaurantId) {
+      restaurantId = user.restaurantId;
+
+    } else if (user) {
+      const restaurant = await Restaurant.findByOwner(user._id);
+      if (restaurant) {
+        restaurantId = restaurant._id;
+      } else {
+        const staff = await Staff.findById(req.user.userId);
+        if (staff && staff.restaurantId) {
+          restaurantId = staff.restaurantId;
+        }
+      }
+    } else {
+      const staff = await Staff.findById(req.user.userId);
+      if (staff && staff.restaurantId) {
+        restaurantId = staff.restaurantId;
+      }
+    }
+
+    if (!restaurantId) {
+      return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
+    }
+
+    const kot = await kotService.getKOTById(req.params.id, restaurantId);
+   //end
     sendSuccess(res, "KOT retrieved successfully", kot);
   } catch (error) {
     next(error);
@@ -158,9 +212,9 @@ export const updateKOTStatus = async (req, res, next) => {
     if (user && user.restaurantId) {
       restaurantId = user.restaurantId;
 
-    } else {
+    } else if (user) {
       //If user doesn't have restaurant check if they have the Owner
-      const restaurant = await Restaurant.findByOwner(req, user.userId);
+      const restaurant = await Restaurant.findByOwner(user._id);
       if (restaurant) {
         restaurantId = restaurant._id;
 
@@ -170,8 +224,14 @@ export const updateKOTStatus = async (req, res, next) => {
         if (staff && staff.restaurantId) {
           restaurantId = staff.restaurantId;
         }
+      }//new
+    } else {
+      // User not found in User collection, try Staff
+      const staff = await Staff.findById(req.user.userId);
+      if (staff && staff.restaurantId) {
+        restaurantId = staff.restaurantId;
       }
-    }
+    }//end
 
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
@@ -206,9 +266,9 @@ export const markKOTPrinted = async (req, res, next) => {
     if (user && user.restaurantId) {
       restaurantId = user.restaurantId;
 
-    } else {
+    } else if (user) {
       //If user doesn't have restaurant check if they have the Owner
-      const restaurant = await Restaurant.findByOwner(req, user.userId);
+      const restaurant = await Restaurant.findByOwner(user._id);
       if (restaurant) {
         restaurantId = restaurant._id;
 
@@ -218,8 +278,14 @@ export const markKOTPrinted = async (req, res, next) => {
         if (staff && staff.restaurantId) {
           restaurantId = staff.restaurantId;
         }
+      }//new
+    } else {
+      // User not found in User collection, try Staff
+      const staff = await Staff.findById(req.user.userId);
+      if (staff && staff.restaurantId) {
+        restaurantId = staff.restaurantId;
       }
-    }
+    }//end
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
     }
@@ -232,9 +298,43 @@ export const markKOTPrinted = async (req, res, next) => {
 };
 
 export const getKOTsByStatus = async (req, res, next) => {
-  try {
+  try {//new
     const { status } = req.params;
-    const kots = await kotService.getKOTsByStatus(status, req.user.role);
+
+    //Get restaurant from user
+    const User = (await import('../models/user.js')).default
+    const Staff = (await import('../models/staff.js')).default
+    const Restaurant = (await import('../models/restaurant.js')).default
+
+    let restaurantId = null;
+
+    //First try to get restaurantId from the user model
+    const user = await User.findById(req.user.userId);
+    if (user && user.restaurantId) {
+      restaurantId = user.restaurantId;
+    } else if (user) {
+      const restaurant = await Restaurant.findByOwner(user._id);
+      if (restaurant) {
+        restaurantId = restaurant._id;
+      } else {
+        const staff = await Staff.findById(req.user.userId);
+        if (staff && staff.restaurantId) {
+          restaurantId = staff.restaurantId;
+        }
+      }
+    } else {
+      const staff = await Staff.findById(req.user.userId);
+      if (staff && staff.restaurantId) {
+        restaurantId = staff.restaurantId;
+      }
+    }
+
+    if (!restaurantId) {
+      return sendSuccess(res, `KOTs with status '${status}' retrieved successfully`, []);
+    }
+
+    const kots = await kotService.getKOTsByStatus(status, req.user.role, restaurantId);
+   //end
     sendSuccess(res, `KOTs with status '${status}' retrieved successfully`, kots);
   } catch (error) {
     next(error);
@@ -242,9 +342,43 @@ export const getKOTsByStatus = async (req, res, next) => {
 };
 
 export const getKOTsForOrder = async (req, res, next) => {
-  try {
+  try {//new
     const { orderId } = req.params;
-    const kots = await kotService.getKOTsForOrder(orderId, req.user.role);
+
+    //Get restaurant from user
+    const User = (await import('../models/user.js')).default
+    const Staff = (await import('../models/staff.js')).default
+    const Restaurant = (await import('../models/restaurant.js')).default
+
+    let restaurantId = null;
+
+    //First try to get restaurantId from the user model
+    const user = await User.findById(req.user.userId);
+    if (user && user.restaurantId) {
+      restaurantId = user.restaurantId;
+    } else if (user) {
+      const restaurant = await Restaurant.findByOwner(user._id);
+      if (restaurant) {
+        restaurantId = restaurant._id;
+      } else {
+        const staff = await Staff.findById(req.user.userId);
+        if (staff && staff.restaurantId) {
+          restaurantId = staff.restaurantId;
+        }
+      }
+    } else {
+      const staff = await Staff.findById(req.user.userId);
+      if (staff && staff.restaurantId) {
+        restaurantId = staff.restaurantId;
+      }
+    }
+
+    if (!restaurantId) {
+      return sendSuccess(res, `KOTs for order retrieved successfully`, []);
+    }
+
+    const kots = await kotService.getKOTsForOrder(orderId, req.user.role, restaurantId);
+ //end
     sendSuccess(res, `KOTs for order retrieved successfully`, kots);
   } catch (error) {
     next(error);
@@ -265,9 +399,9 @@ export const updateKOTItems = async (req, res, next) => {
     if (user && user.restaurantId) {
       restaurantId = user.restaurantId;
 
-    } else {
+    } else if (user) {
       //If user doesn't have restaurant check if they have the Owner
-      const restaurant = await Restaurant.findByOwner(req, user.userId);
+      const restaurant = await Restaurant.findByOwner(user._id);
       if (restaurant) {
         restaurantId = restaurant._id;
 
@@ -277,8 +411,14 @@ export const updateKOTItems = async (req, res, next) => {
         if (staff && staff.restaurantId) {
           restaurantId = staff.restaurantId;
         }
+      }//new
+    } else {
+      // User not found in User collection, try Staff
+      const staff = await Staff.findById(req.user.userId);
+      if (staff && staff.restaurantId) {
+        restaurantId = staff.restaurantId;
       }
-    }
+    }//end
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
     }

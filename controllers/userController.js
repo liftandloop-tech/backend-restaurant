@@ -8,7 +8,7 @@ import { AppError } from "../utils/errorHandler.js";
 
 export const register = async (req, res, next) => {
   try {
-    
+
     const result = await userService.registerUser(req.validated);
     sendSuccess(res, "User registered successfully", result, 201);
   } catch (error) {
@@ -69,7 +69,7 @@ export const getUserById = async (req, res, next) => {
   }
 };
 
-export const  updateProfile = async (req, res, next) => {
+export const updateProfile = async (req, res, next) => {
   try {
     const user = await userService.updateProfile(req.user.userId, req.body);
     sendSuccess(res, "Profile updated successfully", user);
@@ -92,6 +92,16 @@ export const updateUserRole = async (req, res, next) => {
     const { userId, role } = req.validated;
     const updatedUser = await userService.updateUserRole(userId, role, req.user);
     sendSuccess(res, "User role updated successfully", updatedUser);
+  } catch (error) {
+    next(error);
+  }
+};
+//new
+export const changePassword = async (req, res, next) => {
+  try {
+    const { oldPassword, newPassword } = req.validated;
+    const result = await userService.changePassword(req.user.userId, oldPassword, newPassword);
+    sendSuccess(res, "Password changed successfully", result);
   } catch (error) {
     next(error);
   }

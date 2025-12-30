@@ -158,43 +158,32 @@ export const schemas = {
     specialRequests: Joi.string().max(500).optional().allow('')
   }),
 
-
-
-  //new staff validation
-  // staffRegistration: Joi.object({
-  //     name: Joi.string().min(2).max(50).required(),
-  //     email: Joi.string().email().required(),
-  //     phone: Joi.string().min(10).max(15).required(),
-  //     role: Joi.string()
-  //       .valid("Manager", "Cashier", "Waiter", "Kitchen", "Cleaner")
-  //       .required(),
-  //     password: Joi.string().min(8).required(),
-  //   }),
-
   staffRegistration: Joi.object({
     fullName: Joi.string().min(2).max(50).required(),
     email: Joi.string().email().optional().allow('', null),
     phoneNumber: Joi.string().min(10).max(15).required(),
     username: Joi.string().min(3).max(30).required(),
     role: Joi.string()
-      .valid("Manager", "Cashier", "Waiter", "Kitchen", "Admin")
+      .valid("Manager", "Cashier", "Waiter", "Kitchen", "Admin", "Owner", "Delivery", "Bar")
       .required(),
     password: Joi.string().min(6).required(),
     profilePicture: Joi.string().optional().allow('', null),
-    dateOfJoining: Joi.date().optional(),
+    dateOfJoining: Joi.date().optional().allow('', null),
     gender: Joi.string().valid("Male", "Female", "Other").optional().allow('', null),
     branch: Joi.string().optional().allow('', null),
     supervisor: Joi.string().optional().allow('', null),
     shiftStart: Joi.string().optional().allow('', null),
     shiftEnd: Joi.string().optional().allow('', null),
     autoAddToAttendance: Joi.boolean().optional(),
-    baseSalary: Joi.number().min(0).optional(),
-    paymentMode: Joi.string().valid("Cash", "Bank Transfer", "Cheque", "UPI").optional().allow(''),
+    baseSalary: Joi.number().min(0).optional().allow('', null),
+    paymentMode: Joi.string().optional().allow('', null),
     tipCommissionEligible: Joi.boolean().optional(),
     bankName: Joi.string().optional().allow('', null),
     ifscCode: Joi.string().optional().allow('', null),
     accountNumber: Joi.string().optional().allow('', null),
     internalNotes: Joi.string().optional().allow('', null),
+    restaurantId: Joi.string().optional().allow('', null),
+    createdBy: Joi.string().optional().allow('', null),
   }),
 
   staffUpdate: Joi.object({
@@ -221,6 +210,8 @@ export const schemas = {
     accountNumber: Joi.string().optional().allow(''),
     internalNotes: Joi.string().optional().allow(''),
     isActive: Joi.boolean().optional(),
+    restaurantId: Joi.string().optional().allow('', null),
+    updatedBy: Joi.string().optional().allow('', null),
   }),
   passwordChange: Joi.object({
     oldPassword: Joi.string().required(),

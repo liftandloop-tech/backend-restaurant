@@ -19,13 +19,14 @@ export const generateReportData = async (filters = {}) => {
     dateRange = 'This Month',
     branch = 'All Branches',
     fromDate,
-    toDate
+    toDate,
+    restaurantId // Extract restaurantId
   } = filters;
 
   // Calculate date range
   let startDate, endDate;
   const now = new Date();
-  
+
   if (fromDate && toDate) {
     startDate = new Date(fromDate);
     endDate = new Date(toDate);
@@ -68,25 +69,29 @@ export const generateReportData = async (filters = {}) => {
     generatedAt: new Date()
   };
 
+  const orderQuery = { createdAt: { $gte: startDate, $lte: endDate } };
+  const billQuery = { createdAt: { $gte: startDate, $lte: endDate } };
+  const customerQuery = { createdAt: { $gte: startDate, $lte: endDate } };
+
+  if (restaurantId) {
+    orderQuery.restaurantId = restaurantId;
+    billQuery.restaurantId = restaurantId;
+    customerQuery.restaurantId = restaurantId;
+  }
+
   // Get orders data
-  const orders = await Order.find({
-    createdAt: { $gte: startDate, $lte: endDate }
-  }).populate('customerId', 'name email phone');
+  const orders = await Order.find(orderQuery).populate('customerId', 'name email phone');
 
   // Get bills data
-  const bills = await Bill.find({
-    createdAt: { $gte: startDate, $lte: endDate }
-  }).populate('orderId');
+  const bills = await Bill.find(billQuery).populate('orderId');
 
   // Calculate metrics
   const totalRevenue = bills.reduce((sum, bill) => sum + (bill.grandTotal || 0), 0);
   const totalOrders = orders.length;
   const completedOrders = orders.filter(o => o.status === 'completed').length;
-  
+
   // Get customer data
-  const customers = await Customer.find({
-    createdAt: { $gte: startDate, $lte: endDate }
-  });
+  const customers = await Customer.find(customerQuery);
 
   reportData.metrics = {
     totalRevenue,
@@ -124,7 +129,7 @@ export const generateReportData = async (filters = {}) => {
 export const createScheduledReport = async (userId, data) => {
   // Calculate next run time
   const nextRun = calculateNextRun(data.frequency, data.time);
-  
+
   const scheduledReport = await ScheduledReport.create({
     userId,
     ...data,
@@ -146,7 +151,7 @@ export const getScheduledReports = async (userId) => {
  */
 export const updateScheduledReport = async (reportId, userId, data) => {
   const report = await ScheduledReport.findOne({ _id: reportId, userId });
-  
+
   if (!report) {
     throw new AppError("Scheduled report not found", 404);
   }
@@ -158,7 +163,7 @@ export const updateScheduledReport = async (reportId, userId, data) => {
 
   Object.assign(report, data);
   await report.save();
-  
+
   return report;
 };
 
@@ -167,7 +172,7 @@ export const updateScheduledReport = async (reportId, userId, data) => {
  */
 export const deleteScheduledReport = async (reportId, userId) => {
   const report = await ScheduledReport.findOneAndDelete({ _id: reportId, userId });
-  
+
   if (!report) {
     throw new AppError("Scheduled report not found", 404);
   }

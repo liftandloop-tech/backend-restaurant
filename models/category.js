@@ -5,8 +5,7 @@ const categorySchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    trim: true,
-    unique: true
+    trim: true
   },
   description: {
     type: String,
@@ -23,9 +22,9 @@ const categorySchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  
+
   restaurantId: {
-    type : mongoose.Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Restaurant',
     required: true // category must belong to a restaurant
   }
@@ -34,6 +33,7 @@ const categorySchema = new mongoose.Schema({
 });
 
 categorySchema.index({ isActive: 1, displayOrder: 1 });
+categorySchema.index({ restaurantId: 1, name: 1 }, { unique: true });
 
 export default mongoose.model("Category", categorySchema);
 //module.exports=mongoose.model('Category,categorySchema')

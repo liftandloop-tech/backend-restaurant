@@ -9,37 +9,43 @@ import Table from "../models/table.js";
 /**
  * Get today's dashboard summary with yesterday's comparison
  */
-export const getTodaySummary = async () => {
+export const getTodaySummary = async (restaurantId) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-//new for w
+  //new for w
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
   // Today's metrics helper function
   const getMetrics = async (startDate, endDate) => {
     // Orders
-    const orders = await Order.countDocuments({
+    const orderQuery = {
       createdAt: { $gte: startDate, $lt: endDate }
-    });
+    };
+    if (restaurantId) orderQuery.restaurantId = restaurantId;
+    const orders = await Order.countDocuments(orderQuery);
 
     // Bills
-    const bills = await Bill.find({
+    const billQuery = {
       createdAt: { $gte: startDate, $lt: endDate },
       paid: true
-    });
+    };
+    if (restaurantId) billQuery.restaurantId = restaurantId;
+    const bills = await Bill.find(billQuery);
 
     const revenue = bills.reduce((sum, bill) => sum + bill.total, 0);
     const billCount = bills.length;
     const avgOrderValue = billCount > 0 ? revenue / billCount : 0;
 
     // KOT Prep Time
-    const completedKots = await KOT.find({
+    const kotQuery = {
       completedAt: { $gte: startDate, $lt: endDate },
       startedAt: { $exists: true }
-    });
+    };
+    if (restaurantId) kotQuery.restaurantId = restaurantId;
+    const completedKots = await KOT.find(kotQuery);
 
     let totalPrepTime = 0;
     completedKots.forEach(kot => {
@@ -49,11 +55,13 @@ export const getTodaySummary = async () => {
     const avgKotPrepTime = completedKots.length > 0 ? totalPrepTime / completedKots.length : 0;
 
     // Dining Time
-    const completedDineIn = await Order.find({
+    const diningQuery = {
       createdAt: { $gte: startDate, $lt: endDate },
       status: 'completed',
       source: 'dine-in'
-    });
+    };
+    if (restaurantId) diningQuery.restaurantId = restaurantId;
+    const completedDineIn = await Order.find(diningQuery);
 
     let totalDiningTime = 0;
     completedDineIn.forEach(order => {
@@ -76,11 +84,14 @@ export const getTodaySummary = async () => {
 
   // Order status breakdown (Today only)
   //end 
+  const orderMatch = {
+    createdAt: { $gte: today, $lt: tomorrow }
+  };
+  if (restaurantId) orderMatch.restaurantId = restaurantId;
+
   const orderStatuses = await Order.aggregate([
     {
-      $match: {
-        createdAt: { $gte: today, $lt: tomorrow }
-      }
+      $match: orderMatch
     },
     {
       $group: {
@@ -94,22 +105,27 @@ export const getTodaySummary = async () => {
   orderStatuses.forEach(item => {
     statusBreakdown[item._id] = item.count;
   });
-//new for w
+  //new for w
   // Low stock items
-  const lowStockItems = await KOT.find({}).then(async () => {
-    try {
-      const inventoryService = await import('../services/inventoryService.js');
-      return await inventoryService.getLowStockItems();
-    } catch (e) {
-      return [];
-    }
-  });
+  // We don't need to query KOTs here, just call inventoryService directly
+  let lowStockItems = [];
+  try {
+    const inventoryService = await import('../services/inventoryService.js');
+    // Pass restaurantId filter
+    lowStockItems = await inventoryService.getLowStockItems({ restaurantId });
+  } catch (e) {
+    console.error("Error fetching low stock items:", e);
+    lowStockItems = [];
+  }
 
   // Payment methods breakdown (Today)
-  const billsToday = await Bill.find({
+  const billsTodayQuery = {
     createdAt: { $gte: today, $lt: tomorrow },
     paid: true
-  });
+  };
+  if (restaurantId) billsTodayQuery.restaurantId = restaurantId;
+  const billsToday = await Bill.find(billsTodayQuery);
+
   const paymentMethods = billsToday.reduce((acc, bill) => {
     acc[bill.paymentMethod] = (acc[bill.paymentMethod] || 0) + bill.total;
     return acc;
@@ -137,19 +153,22 @@ export const getTodaySummary = async () => {
 /**
  * Get sales statistics for a date range
  */
-export const getSalesStatistics = async (fromDate, toDate) => {
+export const getSalesStatistics = async (fromDate, toDate, restaurantId) => {
   const from = new Date(fromDate);
   from.setHours(0, 0, 0, 0);
   const to = new Date(toDate);
   to.setHours(23, 59, 59, 999);
 
+  const matchFilter = {
+    createdAt: { $gte: from, $lte: to },
+    paid: true
+  };
+  if (restaurantId) matchFilter.restaurantId = restaurantId;
+
   // Daily sales breakdown
   const dailySales = await Bill.aggregate([
     {
-      $match: {
-        createdAt: { $gte: from, $lte: to },
-        paid: true
-      }
+      $match: matchFilter
     },
     {
       $group: {
@@ -178,10 +197,7 @@ export const getSalesStatistics = async (fromDate, toDate) => {
   // Total statistics
   const totalStats = await Bill.aggregate([
     {
-      $match: {
-        createdAt: { $gte: from, $lte: to },
-        paid: true
-      }
+      $match: matchFilter
     },
     {
       $group: {
@@ -222,18 +238,21 @@ export const getSalesStatistics = async (fromDate, toDate) => {
 /**
  * Get top selling items
  */
-export const getTopSellingItems = async (fromDate, toDate, limit = 10) => {
+export const getTopSellingItems = async (fromDate, toDate, limit = 10, restaurantId) => {
   const from = new Date(fromDate);
   from.setHours(0, 0, 0, 0);
   const to = new Date(toDate);
   to.setHours(23, 59, 59, 999);
 
+  const matchFilter = {
+    createdAt: { $gte: from, $lte: to },
+    status: { $ne: 'cancelled' }
+  };
+  if (restaurantId) matchFilter.restaurantId = restaurantId;
+
   const topItems = await Order.aggregate([
     {
-      $match: {
-        createdAt: { $gte: from, $lte: to },
-        status: { $ne: 'cancelled' }
-      }
+      $match: matchFilter
     },
     {
       $unwind: "$items"
@@ -269,19 +288,22 @@ export const getTopSellingItems = async (fromDate, toDate, limit = 10) => {
 /**
  * Get staff performance statistics
  */
-export const getStaffPerformance = async (fromDate, toDate) => {
+export const getStaffPerformance = async (fromDate, toDate, restaurantId) => {
   const from = new Date(fromDate);
   from.setHours(0, 0, 0, 0);
   const to = new Date(toDate);
   to.setHours(23, 59, 59, 999);
 
+  const orderMatch = {
+    createdAt: { $gte: from, $lte: to },
+    status: { $ne: 'cancelled' }
+  };
+  if (restaurantId) orderMatch.restaurantId = restaurantId;
+
   // Waiter performance
   const waiterStats = await Order.aggregate([
     {
-      $match: {
-        createdAt: { $gte: from, $lte: to },
-        status: { $ne: 'cancelled' }
-      }
+      $match: orderMatch
     },
     {
       $group: {
@@ -317,13 +339,16 @@ export const getStaffPerformance = async (fromDate, toDate) => {
     }
   ]);
 
+  const billMatch = {
+    createdAt: { $gte: from, $lte: to },
+    paid: true
+  };
+  if (restaurantId) billMatch.restaurantId = restaurantId;
+
   // Cashier performance
   const cashierStats = await Bill.aggregate([
     {
-      $match: {
-        createdAt: { $gte: from, $lte: to },
-        paid: true
-      }
+      $match: billMatch
     },
     {
       $group: {
@@ -368,18 +393,21 @@ export const getStaffPerformance = async (fromDate, toDate) => {
 /**
  * Get payment method breakdown
  */
-export const getPaymentMethodBreakdown = async (fromDate, toDate) => {
+export const getPaymentMethodBreakdown = async (fromDate, toDate, restaurantId) => {
   const from = new Date(fromDate);
   from.setHours(0, 0, 0, 0);
   const to = new Date(toDate);
   to.setHours(23, 59, 59, 999);
 
+  const matchFilter = {
+    createdAt: { $gte: from, $lte: to },
+    paid: true
+  };
+  if (restaurantId) matchFilter.restaurantId = restaurantId;
+
   const breakdown = await Bill.aggregate([
     {
-      $match: {
-        createdAt: { $gte: from, $lte: to },
-        paid: true
-      }
+      $match: matchFilter
     },
     {
       $group: {
@@ -416,26 +444,45 @@ export const getPaymentMethodBreakdown = async (fromDate, toDate) => {
 /**
  * Get recent activity (latest orders, bills, payments)
  */
-export const getRecentActivity = async (limit = 10) => {
-  const recentOrders = await Order.find()
+export const getRecentActivity = async (limit = 10, restaurantId) => {
+  const orderQuery = {};
+  const billQuery = {};
+  if (restaurantId) {
+    orderQuery.restaurantId = restaurantId;
+    billQuery.restaurantId = restaurantId;
+  }
+
+  const recentOrders = await Order.find(orderQuery)
     .sort({ createdAt: -1 })
     .limit(limit)
     .populate('waiterId', 'name email')
     .lean();
 
-  const recentBills = await Bill.find()
+  const recentBills = await Bill.find(billQuery)
     .sort({ createdAt: -1 })
     .limit(limit)
     .populate('orderId', 'orderNumber tableNumber')
     .populate('cashierId', 'name email')
     .lean();
 
-  const recentPayments = await Payment.find()
+  // For payments, since no restaurantId on Payment schema, we filter by populating billId and matching restaurantId
+  let recentPayments = await Payment.find()
     .sort({ createdAt: -1 })
-    .limit(limit)
-    .populate('billId', 'billNumber total')
+    .limit(limit * 5) // Fetch more to allow for filtering
+    .populate({
+      path: 'billId',
+      select: 'billNumber total restaurantId',
+      match: restaurantId ? { restaurantId: restaurantId } : {}
+    })
     .populate('processedBy', 'name email')
     .lean();
+
+  // Filter out payments where billId is null (meaning it didn't match the restaurantId)
+  if (restaurantId) {
+    recentPayments = recentPayments.filter(p => p.billId);
+  }
+
+  recentPayments = recentPayments.slice(0, limit);
 
   return {
     orders: recentOrders.map(order => ({
@@ -483,7 +530,7 @@ export const getRecentActivity = async (limit = 10) => {
 /**
  * Get dashboard overview (combines multiple statistics)
  */
-export const getDashboardOverview = async (fromDate, toDate) => {
+export const getDashboardOverview = async (fromDate, toDate, restaurantId) => {
   const from = fromDate ? new Date(fromDate) : new Date();
   from.setHours(0, 0, 0, 0);
   const to = toDate ? new Date(toDate) : new Date();
@@ -491,15 +538,15 @@ export const getDashboardOverview = async (fromDate, toDate) => {
 
   // If no dates provided, get today's summary
   if (!fromDate && !toDate) {
-    return await getTodaySummary();
+    return await getTodaySummary(restaurantId);
   }
 
   // Get all statistics in parallel
   const [salesStats, topItems, staffPerformance, paymentBreakdown] = await Promise.all([
-    getSalesStatistics(fromDate, toDate),
-    getTopSellingItems(fromDate, toDate, 10),
-    getStaffPerformance(fromDate, toDate),
-    getPaymentMethodBreakdown(fromDate, toDate)
+    getSalesStatistics(fromDate, toDate, restaurantId),
+    getTopSellingItems(fromDate, toDate, 10, restaurantId),
+    getStaffPerformance(fromDate, toDate, restaurantId),
+    getPaymentMethodBreakdown(fromDate, toDate, restaurantId)
   ]);
 
   return {
@@ -513,4 +560,3 @@ export const getDashboardOverview = async (fromDate, toDate) => {
     paymentMethods: paymentBreakdown
   };
 };
-

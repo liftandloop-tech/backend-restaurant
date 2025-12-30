@@ -382,7 +382,7 @@ export const ensureUserHasRestaurant = async (userId) => {
     const defaultRestaurantData = {
       name: `${user.name}'s Restaurant`,
       email: user.email,
-      phone: user.mobile || '',
+      phone: (user.mobile || '').substring(0, 15),
       description: 'Auto-created restaurant for business operations',
       address: {
         street: 'Default Address',

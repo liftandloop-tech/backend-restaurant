@@ -1,12 +1,50 @@
+//total new
 import * as offerService from "../services/offerService.js";
 import { sendSuccess } from "../utils/response.js";
 
-// const{sendSuccess}=require('../utils/response.js')
-// const offerService=require('../services/offerService.js')
+// Helper to resolve restaurantId
+const resolveRestaurantId = async (userId) => {
+  // Dynamic imports to avoid potential circular dependency issues
+  const User = (await import('../models/user.js')).default;
+  const Staff = (await import('../models/staff.js')).default;
+  const Restaurant = (await import('../models/restaurant.js')).default;
+
+  let restaurantId = null;
+  const user = await User.findById(userId);
+  if (user && user.restaurantId) {
+    restaurantId = user.restaurantId;
+  } else if (user) {
+    const restaurant = await Restaurant.findByOwner(user._id);
+    if (restaurant) {
+      restaurantId = restaurant._id;
+    } else {
+      const staff = await Staff.findById(userId);
+      if (staff && staff.restaurantId) {
+        restaurantId = staff.restaurantId;
+      }
+    }
+  } else {
+    const staff = await Staff.findById(userId);
+    if (staff && staff.restaurantId) {
+      restaurantId = staff.restaurantId;
+    }
+  }
+  return restaurantId;
+};
 
 export const getOffers = async (req, res, next) => {
   try {
-    const offers = await offerService.getOffers(req.query);
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const filters = {
+      ...req.query,
+      restaurantId: restaurantId
+    };
+
+    if (!restaurantId) {
+      return sendSuccess(res, "Offers retrieved successfully", []);
+    }
+
+    const offers = await offerService.getOffers(filters);
     sendSuccess(res, "Offers retrieved successfully", offers);
   } catch (error) {
     next(error);
@@ -15,7 +53,8 @@ export const getOffers = async (req, res, next) => {
 
 export const getOfferById = async (req, res, next) => {
   try {
-    const offer = await offerService.getOfferById(req.params.id);
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const offer = await offerService.getOfferById(req.params.id, restaurantId);
     sendSuccess(res, "Offer retrieved successfully", offer);
   } catch (error) {
     next(error);
@@ -24,7 +63,16 @@ export const getOfferById = async (req, res, next) => {
 
 export const createOffer = async (req, res, next) => {
   try {
-    const offer = await offerService.createOffer(req.body);
+    // Ensure user has a restaurant
+    const restaurantService = (await import('../services/restaurantService.js'));
+    const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
+
+    const offerData = {
+      ...req.body,
+      restaurantId: restaurant._id
+    };
+
+    const offer = await offerService.createOffer(offerData);
     sendSuccess(res, "Offer created successfully", offer, 201);
   } catch (error) {
     next(error);
@@ -33,7 +81,8 @@ export const createOffer = async (req, res, next) => {
 
 export const updateOffer = async (req, res, next) => {
   try {
-    const offer = await offerService.updateOffer(req.params.id, req.body);
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const offer = await offerService.updateOffer(req.params.id, req.body, restaurantId);
     sendSuccess(res, "Offer updated successfully", offer);
   } catch (error) {
     next(error);
@@ -42,7 +91,8 @@ export const updateOffer = async (req, res, next) => {
 
 export const updateOfferStatus = async (req, res, next) => {
   try {
-    const offer = await offerService.updateOfferStatus(req.params.id, req.body.isActive);
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const offer = await offerService.updateOfferStatus(req.params.id, req.body.isActive, restaurantId);
     sendSuccess(res, "Offer status updated successfully", offer);
   } catch (error) {
     next(error);
@@ -51,10 +101,10 @@ export const updateOfferStatus = async (req, res, next) => {
 
 export const deleteOffer = async (req, res, next) => {
   try {
-    await offerService.deleteOffer(req.params.id);
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+    await offerService.deleteOffer(req.params.id, restaurantId);
     sendSuccess(res, "Offer deleted successfully");
   } catch (error) {
     next(error);
   }
 };
-

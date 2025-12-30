@@ -14,13 +14,13 @@ import { ROLES } from "../middlewares/roles.js";
 
 export const registerUser = async (userData) => {
   const { email, password, name, role } = userData;
-  
+
   // Check if user exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     throw new AppError("User with this email already exists", 409);
   }
-  
+
   // Create user
   const user = await User.create({
     email,
@@ -28,16 +28,16 @@ export const registerUser = async (userData) => {
     name,
     role
   });
-  
+
   // Generate tokens
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
-  
+
   // Save refresh token
   user.refreshToken = refreshToken;
   user.refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   await user.save({ validateBeforeSave: false });
-  
+
   return {
     user: {
       id: user._id,
@@ -50,37 +50,51 @@ export const registerUser = async (userData) => {
   };
 };
 
-export const loginUser = async (email, password, ) => {
+export const loginUser = async (email, password,) => {
   // Find user by email only (mobile is optional)
   const user = await User.findOne({ email }).select('+password +refreshToken +refreshTokenExpiry');
-  
+
   if (!user || !await user.comparePassword(password)) {
     throw new AppError("Invalid email or password", 401);
   }
-  
+
   if (!user.isActive) {
     throw new AppError("Account is deactivated", 403);
   }
-  
+
+  // Check if user has a restaurant or needs one created
+  try {
+    const restaurantService = await import("./restaurantService.js");
+    const restaurant = await restaurantService.ensureUserHasRestaurant(user._id);
+    // If a restaurant was found or created, update the user object in memory
+    if (restaurant) {
+      user.restaurantId = restaurant._id;
+    }
+  } catch (error) {
+    console.warn("Could not ensure restaurant for user:", error.message);
+    // Continue login even if restaurant creation fails (e.g. for staff who don't need to own one)
+  }
+
   // Update last login
   user.lastLogin = new Date();
-  
+
   // Generate tokens
   const accessToken = generateAccessToken(user);
   const refreshToken = generateRefreshToken(user);
-  
+
   // Save refresh token
   user.refreshToken = refreshToken;
   user.refreshTokenExpiry = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
   await user.save({ validateBeforeSave: false });
-  
+
   // Return login data
   const result = {
     user: {
       id: user._id,
       email: user.email,
       name: user.name,
-      role: user.role
+      role: user.role,
+      restaurantId: user.restaurantId
     },
     accessToken,
     refreshToken
@@ -89,7 +103,8 @@ export const loginUser = async (email, password, ) => {
   console.log('Backend loginUser returning:', {
     hasUser: !!result.user,
     hasAccessToken: !!result.accessToken,
-    hasRefreshToken: !!result.refreshToken
+    hasRefreshToken: !!result.refreshToken,
+    restaurantId: result.user.restaurantId
   });
 
   return result;
@@ -99,20 +114,20 @@ export const refreshAccessToken = async (refreshToken) => {
   if (!refreshToken) {
     throw new AppError("Refresh token required", 401);
   }
-  
+
   const decoded = jwt.verify(refreshToken, ENV.JWT_SECRET);
   const user = await User.findById(decoded.userId).select('+refreshToken +refreshTokenExpiry');
-  
+
   if (!user || user.refreshToken !== refreshToken) {
     throw new AppError("Invalid refresh token", 401);
   }
-  
+
   if (user.refreshTokenExpiry < new Date()) {
     throw new AppError("Refresh token expired", 401);
   }
-  
+
   const accessToken = generateAccessToken(user);
-  
+
   return { accessToken };
 };
 
@@ -123,7 +138,7 @@ export const logoutUser = async (userId, token) => {
     user.refreshTokenExpiry = undefined;
     await user.save({ validateBeforeSave: false });
   }
-  
+
   // Add token to blacklist
   if (token) {
     addToBlacklist(token);
@@ -134,7 +149,7 @@ export const getAllUsers = async (filters = {}) => {
   const query = {};
   if (filters.role) query.role = filters.role;
   if (filters.isActive !== undefined) query.isActive = filters.isActive;
-  
+
   return await User.find(query).select('-password -refreshToken').sort({ createdAt: -1 });
 };
 
@@ -149,17 +164,17 @@ export const getUserById = async (userId) => {
 export const updateProfile = async (userId, updateData) => {
   const allowedFields = ['name', 'mobile', 'email'];
   const updateFields = {};
-  
+
   Object.keys(updateData).forEach(key => {
     if (allowedFields.includes(key)) {
       updateFields[key] = updateData[key];
     }
   });
-  
+
   if (Object.keys(updateFields).length === 0) {
     throw new AppError("No valid fields to update", 400);
   }
-  
+
   // Check if email is being updated and if it's already taken
   if (updateFields.email) {
     const existingUser = await User.findOne({ email: updateFields.email, _id: { $ne: userId } });
@@ -167,17 +182,17 @@ export const updateProfile = async (userId, updateData) => {
       throw new AppError("Email already in use", 409);
     }
   }
-  
+
   const user = await User.findByIdAndUpdate(
     userId,
     { $set: updateFields },
     { new: true, runValidators: true }
   ).select('-password -refreshToken');
-  
+
   if (!user) {
     throw new AppError("User not found", 404);
   }
-  
+
   return user;
 };
 
@@ -199,7 +214,7 @@ export const updateUserRole = async (targetUserId, newRole, actingUser) => {
   if (targetUser.role === ROLES.OWNER && actingUser.role !== ROLES.OWNER) {
     throw new AppError("Only the Owner can change another Owner's role", 403);
   }
-// new for w
+  // new for w
   const oldRole = targetUser.role;
   targetUser.role = newRole;
   await targetUser.save({ validateBeforeSave: false });
@@ -226,7 +241,7 @@ export const updateUserRole = async (targetUserId, newRole, actingUser) => {
       console.error('Error updating restaurant stats after role change:', error);
     }
   }
-// end
+  // end
   return {
     id: targetUser._id,
     name: targetUser.name,
@@ -235,7 +250,24 @@ export const updateUserRole = async (targetUserId, newRole, actingUser) => {
     isActive: targetUser.isActive
   };
 };
+//new
+export const changePassword = async (userId, oldPassword, newPassword) => {
+  const user = await User.findById(userId).select('+password');
+  if (!user) {
+    throw new AppError("User not found", 404);
+  }
 
+  const isMatch = await user.comparePassword(oldPassword);
+  if (!isMatch) {
+    throw new AppError("Incorrect current password", 400);
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  return { message: "Password changed successfully" };
+};
+//end
 export const generateAccessToken = (user) => {
   return jwt.sign(
     {

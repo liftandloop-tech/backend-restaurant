@@ -39,16 +39,16 @@ const menuItemSchema = new mongoose.Schema({
   },
   ingredients: [{
 
-      itemId: {
-      type : mongoose.Schema.Types.ObjectId,
+    itemId: {
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'InventoryItem'
-       },
-      quantity: {
-         type: Number,
-          required: true
-       }
-    }],
-  
+    },
+    quantity: {
+      type: Number,
+      required: true
+    }
+  }],
+
   allergens: [{
     type: String
   }],
@@ -64,7 +64,7 @@ const menuItemSchema = new mongoose.Schema({
   },
 
   restaurantId: {
-    type : mongoose.Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Restaurant',
     required: true // manue must belong to a restaurant
   }
@@ -74,6 +74,7 @@ const menuItemSchema = new mongoose.Schema({
 
 menuItemSchema.index({ categoryId: 1, isAvailable: 1 });
 menuItemSchema.index({ name: 'text', description: 'text' });
+menuItemSchema.index({ restaurantId: 1, name: 1 }, { unique: true });
 
 export default mongoose.model("MenuItem", menuItemSchema);
 //module.exports=mongoose.model('MenuItem,menuItemSchema')

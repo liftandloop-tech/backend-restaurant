@@ -18,7 +18,7 @@ const customerSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
-    index: true
+    trim: true
   },
   address: {
     street: String,
@@ -73,7 +73,7 @@ const customerSchema = new mongoose.Schema({
   timestamps: true
 });
 
-customerSchema.index({ phone: 1 });
+customerSchema.index({ restaurantId: 1, phone: 1 }, { unique: true });
 customerSchema.index({ email: 1 });
 customerSchema.index({ name: 'text' });
 
