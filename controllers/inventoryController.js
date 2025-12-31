@@ -5,35 +5,7 @@ import { sendSuccess } from "../utils/response.js";
 //new
 import { AppError } from "../utils/errorHandler.js";
 
-// Helper to resolve restaurantId
-const resolveRestaurantId = async (userId) => {
-  // Dynamic imports to avoid potential circular dependency issues
-  const User = (await import('../models/user.js')).default;
-  const Staff = (await import('../models/staff.js')).default;
-  const Restaurant = (await import('../models/restaurant.js')).default;
-
-  let restaurantId = null;
-  const user = await User.findById(userId);
-  if (user && user.restaurantId) {
-    restaurantId = user.restaurantId;
-  } else if (user) {
-    const restaurant = await Restaurant.findByOwner(user._id);
-    if (restaurant) {
-      restaurantId = restaurant._id;
-    } else {
-      const staff = await Staff.findById(userId);
-      if (staff && staff.restaurantId) {
-        restaurantId = staff.restaurantId;
-      }
-    }
-  } else {
-    const staff = await Staff.findById(userId);
-    if (staff && staff.restaurantId) {
-      restaurantId = staff.restaurantId;
-    }
-  }
-  return restaurantId;
-};
+import { resolveRestaurantId } from "../utils/context.js";
 
 export const getInventoryItems = async (req, res, next) => {
   try {
@@ -65,25 +37,16 @@ export const getInventoryItemById = async (req, res, next) => {
 
 export const createInventoryItem = async (req, res, next) => {
   try {//new
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    let restaurantId = await resolveRestaurantId(req.user.userId);
     if (!restaurantId) {
-      // Only fail if we can't determine ID. But for creation we probably want to ensure it exists or create one?
-      // The original code used ensureUserHasRestaurant. Let's stick to that if needed, 
-      // but resolveRestaurantId is consistent for reading.
       const restaurantService = (await import('../services/restaurantService.js'));
       const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
-      // Now we have it
+      restaurantId = restaurant._id;
     }
-
-    // Re-resolve or just use what we found. `ensureUserHasRestaurant` might create one.
-    // Let's use the explicit service call for safety on creation as per original design.
-    const restaurantService = (await import('../services/restaurantService.js'));
-    const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
-//end
 
     const itemData = {
       ...req.body,
-      restaurantId: restaurant._id
+      restaurantId: restaurantId
     };
 
     const item = await inventoryService.createInventoryItem(itemData);

@@ -1,35 +1,7 @@
 import * as tableService from "../services/tableService.js";
 import { sendSuccess } from "../utils/response.js";
 
-// Helper to resolve restaurantId
-const resolveRestaurantId = async (userId) => {
-  // Dynamic imports to avoid potential circular dependency issues
-  const User = (await import('../models/user.js')).default;
-  const Staff = (await import('../models/staff.js')).default;
-  const Restaurant = (await import('../models/restaurant.js')).default;
-
-  let restaurantId = null;
-  const user = await User.findById(userId);
-  if (user && user.restaurantId) {
-    restaurantId = user.restaurantId;
-  } else if (user) {
-    const restaurant = await Restaurant.findByOwner(user._id);
-    if (restaurant) {
-      restaurantId = restaurant._id;
-    } else {
-      const staff = await Staff.findById(userId);
-      if (staff && staff.restaurantId) {
-        restaurantId = staff.restaurantId;
-      }
-    }
-  } else {
-    const staff = await Staff.findById(userId);
-    if (staff && staff.restaurantId) {
-      restaurantId = staff.restaurantId;
-    }
-  }
-  return restaurantId;
-};
+import { resolveRestaurantId } from "../utils/context.js";
 
 export const getTables = async (req, res, next) => {
   try {
@@ -75,12 +47,16 @@ export const getTableById = async (req, res, next) => {
 export const createTable = async (req, res, next) => {
   try {
     // Ensure user has a restaurant (create one if needed)
-    const restaurantService = (await import('../services/restaurantService.js'));
-    const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
+    let restaurantId = await resolveRestaurantId(req.user.userId);
+    if (!restaurantId) {
+      const restaurantService = (await import('../services/restaurantService.js'));
+      const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
+      restaurantId = restaurant._id;
+    }
 
     const tableData = {
       ...req.body,
-      restaurantId: restaurant._id
+      restaurantId: restaurantId
     };
 
     const table = await tableService.createTable(tableData);

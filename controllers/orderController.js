@@ -1,5 +1,6 @@
 import * as orderService from "../services/orderService.js";
 import { sendSuccess, sendError } from "../utils/response.js";
+import { resolveRestaurantId } from "../utils/context.js";
 
 // const{sendSuccess}=require('../utils/response.js')
 // const orderService=require('../services/orderService.js')
@@ -15,69 +16,29 @@ export const createOrder = async (req, res, next) => {
 
 export const getOrders = async (req, res, next) => {
   try {
-       const User = (await import('../modles/user.js')).default;
-       const Staff = (await import('../modles/staff.js')).default;
-       const Restaurant = (await import('../modles/restaurant.js')).default;
-       
-    let restaurantId = null;
-    const user = await User.findById(req.user.userId);
-    if(user && user.restaurantId) {
-      restaurantId = user.restaurantId;
+    const restaurantId = await resolveRestaurantId(req.user.userId);
 
-    }else{
-      const restaurant = await Restaurant.findByOwner(req.params.userId);
-      if(restaurant) {
-        restaurantId = restaurant._id;
-      } else {
-        const staff = await Staff.findById(req.user.userId);
-        if(staff && staff.restaurantId) {
-          restaurantId = staff.restaurantId
-
-      }
-    }
-  }
-   
     if (!restaurantId) {
-      return sendSuccess(res, "Orders retrieved successfully",[])
-    }    
-       const filters = {...req.query, restaurantId } ;
-       const orders = await orderService.getOrders(filters, req.user.userId, req.user.role);
-       sendSuccess(res, "Orders retrieved successfully", orders);
+      return sendSuccess(res, "Orders retrieved successfully", [])
+    }
+    const filters = { ...req.query, restaurantId };
+    const orders = await orderService.getOrders(filters, req.user.userId, req.user.role);
+    sendSuccess(res, "Orders retrieved successfully", orders);
   } catch (error) {
     next(error)
   }
 }
-    export const getOrderById = async (req, res, next) => {
+export const getOrderById = async (req, res, next) => {
   try {
-    
-       const User = (await import('../modles/user.js')).default;
-       const Staff = (await import('../modles/staff.js')).default;
-       const Restaurant = (await import('../modles/restaurant.js')).default;
-       
-    let restaurantId = null;
-    const user = await User.findById(req.user.userId);
-    if(user && user.restaurantId) {
-      restaurantId = user.restaurantId;
 
-    }else{
-      const restaurant = await Restaurant.findByOwner(req.params.userId);
-      if(restaurant) {
-        restaurantId = restaurant._id;
-      } else {
-        const staff = await Staff.findById(req.user.userId);
-        if(staff && staff.restaurantId) {
-          restaurantId = staff.restaurantId
+    const restaurantId = await resolveRestaurantId(req.user.userId);
 
-      }
-    }
-  }     
-
-       const order = await orderService.getOrderById(req.params.id, restaurantId);
-       sendSuccess(res, "Orders retrieved successfully", order);
+    const order = await orderService.getOrderById(req.params.id, restaurantId);
+    sendSuccess(res, "Orders retrieved successfully", order);
   } catch (error) {
     next(error)
   }
-} 
+}
 export const updateOrder = async (req, res, next) => {
   try {
     // Resolve restaurantId (though updateOrder handles it via order ownership check, passing it enforces strict mode)
@@ -85,59 +46,42 @@ export const updateOrder = async (req, res, next) => {
     // But we should fetch restaurantId to pass it if we want strict mode.
     // For now, let's assume service will check order.restaurantId matches user's.
     // Update: Let's fetch it for consistency.
-    
+
        const User = (await import('../modles/user.js')).default;
        const Staff = (await import('../modles/staff.js')).default;
        const Restaurant = (await import('../modles/restaurant.js')).default;
-       
+
     let restaurantId = null;
     const user = await User.findById(req.user.userId);
-    if(user && user.restaurantId) 
+    if (user && user.restaurantId)
       restaurantId = user.restaurantId;
-     else{
+    else {
       const restaurant = await Restaurant.findByOwner(req.user.userId);
-      if(restaurant) 
+      if (restaurant)
         restaurantId = restaurant._id;
-       else {
+      else {
         const staff = await Staff.findById(req.user.userId);
-        if(staff) 
-          restaurantId = staff.restaurantId 
-       }
+        if (staff)
+          restaurantId = staff.restaurantId
       }
+    }
 
- const order = await orderService.updateOrder(
-   req.params.id,
-   req.validated,
-   req.user.userId,
-   restaurantId
- );
- sendSuccess(res, "Order updated successfully", order);
- } catch (error) {
-   next(error) 
+    const order = await orderService.updateOrder(
+      req.params.id,
+      req.validated,
+      req.user.userId,
+      restaurantId
+    );
+    sendSuccess(res, "Order updated successfully", order);
+  } catch (error) {
+    next(error)
 
   }
 };
 export const updateOrderStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
-       const User = (await import('../modles/user.js')).default;
-       const Staff = (await import('../modles/staff.js')).default;
-       const Restaurant = (await import('../modles/restaurant.js')).default;
-       
-    let restaurantId = null;
-    const user = await User.findById(req.user.userId);
-    if(user && user.restaurantId) 
-      restaurantId = user.restaurantId;
-     else{
-      const restaurant = await Restaurant.findByOwner(req.user.userId);
-      if(restaurant) 
-        restaurantId = restaurant._id;
-       else {
-        const staff = await Staff.findById(req.user.userId);
-        if(staff) 
-          restaurantId = staff.restaurantId 
-       }
-    }
+    const restaurantId = await resolveRestaurantId(req.user.userId);
 
     const order = await orderService.updateOrderStatus(
       req.params.id,
@@ -156,24 +100,7 @@ export const updateOrderStatus = async (req, res, next) => {
 
 export const confirmOrder = async (req, res, next) => {
   try {
-       const User = (await import('../modles/user.js')).default;
-       const Staff = (await import('../modles/staff.js')).default;
-       const Restaurant = (await import('../modles/restaurant.js')).default;
-       
-    let restaurantId = null;
-    const user = await User.findById(req.user.userId);
-    if(user && user.restaurantId) 
-      restaurantId = user.restaurantId;
-     else{
-      const restaurant = await Restaurant.findByOwner(req.user.userId);
-      if(restaurant) 
-        restaurantId = restaurant._id;
-       else {
-        const staff = await Staff.findById(req.user.userId);
-        if(staff) 
-          restaurantId = staff.restaurantId 
-       }
-    }
+    const restaurantId = await resolveRestaurantId(req.user.userId);
 
     const order = await orderService.confirmOrder(
       req.params.id,
@@ -190,25 +117,8 @@ export const confirmOrder = async (req, res, next) => {
 export const getOrdersByStatus = async (req, res, next) => {
   try {
     const { status } = req.params;
-    
-       const User = (await import('../modles/user.js')).default;
-       const Staff = (await import('../modles/staff.js')).default;
-       const Restaurant = (await import('../modles/restaurant.js')).default;
-       
-    let restaurantId = null;
-    const user = await User.findById(req.user.userId);
-    if(user && user.restaurantId) 
-      restaurantId = user.restaurantId;
-     else{
-      const restaurant = await Restaurant.findByOwner(req.user.userId);
-      if(restaurant) 
-        restaurantId = restaurant._id;
-       else {
-        const staff = await Staff.findById(req.user.userId);
-        if(staff) 
-          restaurantId = staff.restaurantId 
-       }
-     }
+
+    const restaurantId = await resolveRestaurantId(req.user.userId);
 
     if (!restaurantId) {
       return sendSuccess(res, `Orders with status '${status}' retrieved succwssfully`, []);
@@ -222,27 +132,10 @@ export const getOrdersByStatus = async (req, res, next) => {
 }
 
 export const cancelOrder = async (req, res, next) => {
-  try {    
+  try {
     const { reason } = req.body;
-        const User = (await import('../modles/user.js')).default;
-       const Staff = (await import('../modles/staff.js')).default;
-       const Restaurant = (await import('../modles/restaurant.js')).default;
-       
-    let restaurantId = null;
-    const user = await User.findById(req.user.userId);
-    if(user && user.restaurantId) 
-      restaurantId = user.restaurantId;
-     else{
-      const restaurant = await Restaurant.findByOwner(req.user.userId);
-      if(restaurant) 
-        restaurantId = restaurant._id;
-       else {
-        const staff = await Staff.findById(req.user.userId);
-        if(staff) 
-          restaurantId = staff.restaurantId 
-       }
-     }  
-     
+    const restaurantId = await resolveRestaurantId(req.user.userId);
+
     const order = await orderService.cancelOrder(
       req.params.id,
       reason,
@@ -251,7 +144,7 @@ export const cancelOrder = async (req, res, next) => {
     );
     sendSuccess(res, "Order canceled successfully", order);
   } catch (error) {
-    next (error)
+    next(error)
   }
 }
 

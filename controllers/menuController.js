@@ -1,48 +1,7 @@
 import * as menuService from "../services/menuService.js";
 import { sendSuccess, sendError } from "../utils/response.js";
 
-// Helper to resolve restaurantId
-const resolveRestaurantId = async (userId) => {
-  // Dynamic imports to avoid potential circular dependency issues
-  const User = (await import('../models/user.js')).default;
-  const Staff = (await import('../models/staff.js')).default;
-  const Restaurant = (await import('../models/restaurant.js')).default;
-
-  let restaurantId = null;
-
-
-  //First try to get restaurantId from the user model
-  const user = await User.findById(userId);
-  if (user && user.restaurantId) {
-    restaurantId = user.restaurantId;
-  } else if (user) {
-    const restaurant = await Restaurant.findByOwner(user._id);
-    if (restaurant) {
-      restaurantId = restaurant._id;
-    } else {
-      //Try staff lookup as fallback 
-      const staff = await Staff.findById(userId);
-      if (staff && staff.restaurantId) {
-        restaurantId = staff.restaurantId;
-      }
-    }
-  //   //new
-  // } else {
-  //   const staff = await Staff.findById(userId);
-  //   if (staff && staff.restaurantId) {
-  //     restaurantId = staff.restaurantId;
-  //   }
-  // }
-       } else {
-        // User no found in user collection try Staff
-         const staff = await Staff.findById(userId);
-         if (staff && staff.restaurantId) {
-           restaurantId = staff.restaurantId;
-         }
-      }   
-     
-  return restaurantId;
-};
+import { resolveRestaurantId } from "../utils/context.js";
 
 
 
@@ -80,11 +39,15 @@ export const createCategory = async (req, res, next) => {
   try {
 
     // Ensure user has a restaurant (create one if needed) 
-    const restaurantService = (await import('../services/restaurantService.js'));
-    const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
+    let restaurantId = await resolveRestaurantId(req.user.userId);
+    if (!restaurantId) {
+      const restaurantService = (await import('../services/restaurantService.js'));
+      const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
+      restaurantId = restaurant._id;
+    }
     const categoryData = {
       ...req.body,
-      restaurantId: restaurant._id
+      restaurantId: restaurantId
     }
     const category = await menuService.createCategory(categoryData);
     sendSuccess(res, "Category created successfully", category, 201);
@@ -155,12 +118,16 @@ export const getMenuItemById = async (req, res, next) => {
 export const createMenuItem = async (req, res, next) => {
   try {
     // Ensure user has a restaurant (create one if needed)
-    const restaurantService = (await import('../services/restaurantService.js'));
-    const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
+    let restaurantId = await resolveRestaurantId(req.user.userId);
+    if (!restaurantId) {
+      const restaurantService = (await import('../services/restaurantService.js'));
+      const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
+      restaurantId = restaurant._id;
+    }
 
     const itemData = {
       ...req.body,
-      restaurantId: restaurant._id
+      restaurantId: restaurantId
     };
 
     const item = await menuService.createMenuItem(itemData);

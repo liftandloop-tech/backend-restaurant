@@ -2,35 +2,7 @@
 import * as customerService from "../services/customerService.js";
 import { sendSuccess } from "../utils/response.js";
 
-// Helper to resolve restaurantId
-const resolveRestaurantId = async (userId) => {
-  // Dynamic imports to avoid potential circular dependency issues
-  const User = (await import('../models/user.js')).default;
-  const Staff = (await import('../models/staff.js')).default;
-  const Restaurant = (await import('../models/restaurant.js')).default;
-
-  let restaurantId = null;
-  const user = await User.findById(userId);
-  if (user && user.restaurantId) {
-    restaurantId = user.restaurantId;
-  } else if (user) {
-    const restaurant = await Restaurant.findByOwner(user._id);
-    if (restaurant) {
-      restaurantId = restaurant._id;
-    } else {
-      const staff = await Staff.findById(userId);
-      if (staff && staff.restaurantId) {
-        restaurantId = staff.restaurantId;
-      }
-    }
-  } else {
-    const staff = await Staff.findById(userId);
-    if (staff && staff.restaurantId) {
-      restaurantId = staff.restaurantId;
-    }
-  }
-  return restaurantId;
-};
+import { resolveRestaurantId } from "../utils/context.js";
 
 export const getCustomers = async (req, res, next) => {
   try {
@@ -61,15 +33,19 @@ export const getCustomerById = async (req, res, next) => {
 
 export const createCustomer = async (req, res, next) => {
   try {
-    // Ensure user has a restaurant (create one if needed)
-    // resolveRestaurantId handles finding it, but this specific call might need ensureUserHasRestaurant if we want to auto-create
-    // mimicking previous logic for safety
-    const restaurantService = (await import('../services/restaurantService.js'));
-    const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
+    let restaurantId = await resolveRestaurantId(req.user.userId);
+
+    // Only if we truly cannot find a restaurant, we try to ensure (create) one.
+    // This prevents accidental creation logic triggered if resolveRestaurantId was just missing a specific edge case.
+    if (!restaurantId) {
+      const restaurantService = (await import('../services/restaurantService.js'));
+      const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
+      restaurantId = restaurant._id;
+    }
 
     const customerData = {
       ...req.body,
-      restaurantId: restaurant._id
+      restaurantId: restaurantId
     };
 
     const customer = await customerService.createCustomer(customerData);
