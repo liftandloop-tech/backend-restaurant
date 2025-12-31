@@ -26,20 +26,30 @@ const resolveRestaurantId = async (userId) => {
         restaurantId = staff.restaurantId;
       }
     }
-    //new
-  } else {
-    const staff = await Staff.findById(userId);
-    if (staff && staff.restaurantId) {
-      restaurantId = staff.restaurantId;
-    }
-  }
+  //   //new
+  // } else {
+  //   const staff = await Staff.findById(userId);
+  //   if (staff && staff.restaurantId) {
+  //     restaurantId = staff.restaurantId;
+  //   }
+  // }
+       } else {
+        // User no found in user collection try Staff
+         const staff = await Staff.findById(userId);
+         if (staff && staff.restaurantId) {
+           restaurantId = staff.restaurantId;
+         }
+      }   
+     
   return restaurantId;
 };
+
+
 
 export const getCategories = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId);
-    //end
+
     // clean filters
     const cleanQuery = {};
     Object.keys(req.query).forEach(key => {

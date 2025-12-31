@@ -225,19 +225,33 @@ export const schemas = {
   }),
   // new for w
   // Restaurant validation schemas
-  restaurant: Joi.object({
-    name: Joi.string().min(2).max(100).required(),
-    description: Joi.string().max(500).optional(),
+  // restaurant: Joi.object({
+  //   name: Joi.string().min(2).max(100).required(),
+  //   description: Joi.string().max(500).optional(),
+  //   email: Joi.string().email().required(),
+  //   phone: Joi.string().max(15).optional(),
+  //   website: Joi.string().uri().optional(),
+  //   address: Joi.object({
+  //     street: Joi.string().max(200).optional(),
+  //     city: Joi.string().max(100).optional(),
+  //     state: Joi.string().max(100).optional(),
+  //     zipCode: Joi.string().max(20).optional(),
+  //     country: Joi.string().max(100).optional()
+  //   }).optional(),
+ // Restaurant validation schemas
+ restaurant: Joi.object({
+  name: Joi.string().min(2).max(100).required(),
+  description: Joi.string().max(500).optional(),
     email: Joi.string().email().required(),
-    phone: Joi.string().max(15).optional(),
+  phone: Joi.string().max(15).optional(),
     website: Joi.string().uri().optional(),
-    address: Joi.object({
-      street: Joi.string().max(200).optional(),
-      city: Joi.string().max(100).optional(),
-      state: Joi.string().max(100).optional(),
-      zipCode: Joi.string().max(20).optional(),
-      country: Joi.string().max(100).optional()
-    }).optional(),
+ address: Joi.object({
+    street: Joi.string().max(500).optional(),
+    city: Joi.string().max(100).optional(),
+    state: Joi.string().max(100).optional(),
+    zipCode: Joi.string().max(20).optional(),
+    country: Joi.string().max(500).optional(),
+ }).optional(),
     licenseKey: Joi.string().uppercase().optional(),
     currency: Joi.string().valid('INR', 'USD', 'EUR', 'GBP').optional(),
     timezone: Joi.string().optional(),

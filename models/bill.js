@@ -15,12 +15,6 @@ const billSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  // customerId: {
-  //   type: mongoose.Schema.Types.ObjectId,
-  //   ref: 'Customer',
-  //   required: false, // Optional for walk-in customers
-  //   index: true
-  // },
   customerId:{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Customer',
