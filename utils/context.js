@@ -1,3 +1,4 @@
+//total new
 // Helper to resolve restaurantId
 export const resolveRestaurantId = async (userId) => {
     // Dynamic imports to avoid potential circular dependency issues
@@ -32,6 +33,10 @@ export const resolveRestaurantId = async (userId) => {
         if (staff && staff.restaurantId) {
             restaurantId = staff.restaurantId;
         }
+    }
+
+    if (!restaurantId && userId) {
+        console.warn(`[resolveRestaurantId] Could not resolve restaurantId for userId: ${userId}`);
     }
 
     return restaurantId;

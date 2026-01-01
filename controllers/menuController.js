@@ -41,9 +41,7 @@ export const createCategory = async (req, res, next) => {
     // Ensure user has a restaurant (create one if needed) 
     let restaurantId = await resolveRestaurantId(req.user.userId);
     if (!restaurantId) {
-      const restaurantService = (await import('../services/restaurantService.js'));
-      const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
-      restaurantId = restaurant._id;
+      throw { statusCode: 400, message: "Restaurant context not found. Please ensure you are logged in correctly." };
     }
     const categoryData = {
       ...req.body,
@@ -120,9 +118,7 @@ export const createMenuItem = async (req, res, next) => {
     // Ensure user has a restaurant (create one if needed)
     let restaurantId = await resolveRestaurantId(req.user.userId);
     if (!restaurantId) {
-      const restaurantService = (await import('../services/restaurantService.js'));
-      const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
-      restaurantId = restaurant._id;
+      throw { statusCode: 400, message: "Restaurant context not found. Please ensure you are logged in correctly." };
     }
 
     const itemData = {

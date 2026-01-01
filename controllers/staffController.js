@@ -16,11 +16,8 @@ export const registerStaffController = async (req, res, next) => {
 
         if (!restaurantId) {
             // Ensure user has a restaurant (create one if needed)
-            const restaurantService = (await import('../services/restaurantService.js'));
-            const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
-            if (restaurant) {
-                restaurantId = restaurant._id;
-            }
+            let resolved = await resolveRestaurantId(req.user.userId);
+            if (resolved) restaurantId = resolved;
         }
 
         if (!restaurantId) {

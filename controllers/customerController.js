@@ -35,12 +35,8 @@ export const createCustomer = async (req, res, next) => {
   try {
     let restaurantId = await resolveRestaurantId(req.user.userId);
 
-    // Only if we truly cannot find a restaurant, we try to ensure (create) one.
-    // This prevents accidental creation logic triggered if resolveRestaurantId was just missing a specific edge case.
     if (!restaurantId) {
-      const restaurantService = (await import('../services/restaurantService.js'));
-      const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
-      restaurantId = restaurant._id;
+      throw { statusCode: 400, message: "Restaurant context not found. Please ensure you are logged in correctly." };
     }
 
     const customerData = {

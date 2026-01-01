@@ -47,24 +47,7 @@ export const updateOrder = async (req, res, next) => {
     // For now, let's assume service will check order.restaurantId matches user's.
     // Update: Let's fetch it for consistency.
 
-       const User = (await import('../modles/user.js')).default;
-       const Staff = (await import('../modles/staff.js')).default;
-       const Restaurant = (await import('../modles/restaurant.js')).default;
-
-    let restaurantId = null;
-    const user = await User.findById(req.user.userId);
-    if (user && user.restaurantId)
-      restaurantId = user.restaurantId;
-    else {
-      const restaurant = await Restaurant.findByOwner(req.user.userId);
-      if (restaurant)
-        restaurantId = restaurant._id;
-      else {
-        const staff = await Staff.findById(req.user.userId);
-        if (staff)
-          restaurantId = staff.restaurantId
-      }
-    }
+    const restaurantId = await resolveRestaurantId(req.user.userId);
 
     const order = await orderService.updateOrder(
       req.params.id,
