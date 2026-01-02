@@ -3,36 +3,7 @@ import * as dashboardService from "../services/dashboardService.js";
 import { sendSuccess, sendError } from "../utils/response.js";
 import { AppError } from "../utils/errorHandler.js";
 
-// Helper to resolve restaurantId
-const resolveRestaurantId = async (userId) => {
-  // Dynamic imports to avoid potential circular dependency issues if any, though standard imports should be fine here.
-  // Keeping safe given previous patterns.
-  const User = (await import('../models/user.js')).default;
-  const Staff = (await import('../models/staff.js')).default;
-  const Restaurant = (await import('../models/restaurant.js')).default;
-
-  let restaurantId = null;
-  const user = await User.findById(userId);
-  if (user && user.restaurantId) {
-    restaurantId = user.restaurantId;
-  } else if (user) {
-    const restaurant = await Restaurant.findByOwner(user._id);
-    if (restaurant) {
-      restaurantId = restaurant._id;
-    } else {
-      const staff = await Staff.findById(userId);
-      if (staff && staff.restaurantId) {
-        restaurantId = staff.restaurantId;
-      }
-    }
-  } else {
-    const staff = await Staff.findById(userId);
-    if (staff && staff.restaurantId) {
-      restaurantId = staff.restaurantId;
-    }
-  }
-  return restaurantId;
-};
+import { resolveRestaurantId } from "../utils/context.js";
 
 /**
  * Get today's dashboard summary
@@ -40,7 +11,7 @@ const resolveRestaurantId = async (userId) => {
  */
 export const getTodaySummary = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Today's summary retrieved successfully", {
         totalSales: 0,
@@ -80,7 +51,7 @@ export const getSalesStatistics = async (req, res, next) => {
       throw new AppError("'from' date must be before 'to' date", 400);
     }
 
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Sales statistics retrieved successfully", []);
     }
@@ -115,7 +86,7 @@ export const getTopSellingItems = async (req, res, next) => {
       throw new AppError("Limit must be a number between 1 and 100", 400);
     }
 
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Top selling items retrieved successfully", []);
     }
@@ -145,7 +116,7 @@ export const getStaffPerformance = async (req, res, next) => {
       throw new AppError("Invalid date format. Use YYYY-MM-DD format", 400);
     }
 
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Staff performance retrieved successfully", []);
     }
@@ -175,7 +146,7 @@ export const getPaymentMethodBreakdown = async (req, res, next) => {
       throw new AppError("Invalid date format. Use YYYY-MM-DD format", 400);
     }
 
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Payment method breakdown retrieved successfully", []);
     }
@@ -199,7 +170,7 @@ export const getRecentActivity = async (req, res, next) => {
       throw new AppError("Limit must be a number between 1 and 50", 400);
     }
 
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Recent activity retrieved successfully", []);
     }
@@ -236,7 +207,7 @@ export const getDashboardOverview = async (req, res, next) => {
       }
     }
 
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Dashboard overview retrieved successfully", {
         today: { totalSales: 0, totalOrders: 0, customers: 0 },

@@ -2,39 +2,11 @@
 import * as reservationService from "../services/reservationService.js";
 import { sendSuccess } from "../utils/response.js";
 
-// Helper to resolve restaurantId
-const resolveRestaurantId = async (userId) => {
-  // Dynamic imports to avoid potential circular dependency issues
-  const User = (await import('../models/user.js')).default;
-  const Staff = (await import('../models/staff.js')).default;
-  const Restaurant = (await import('../models/restaurant.js')).default;
-
-  let restaurantId = null;
-  const user = await User.findById(userId);
-  if (user && user.restaurantId) {
-    restaurantId = user.restaurantId;
-  } else if (user) {
-    const restaurant = await Restaurant.findByOwner(user._id);
-    if (restaurant) {
-      restaurantId = restaurant._id;
-    } else {
-      const staff = await Staff.findById(userId);
-      if (staff && staff.restaurantId) {
-        restaurantId = staff.restaurantId;
-      }
-    }
-  } else {
-    const staff = await Staff.findById(userId);
-    if (staff && staff.restaurantId) {
-      restaurantId = staff.restaurantId;
-    }
-  }
-  return restaurantId;
-};
+import { resolveRestaurantId } from "../utils/context.js";
 
 export const getReservations = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
     // Clean filters
     const cleanQuery = {};
@@ -63,7 +35,7 @@ export const getReservations = async (req, res, next) => {
 
 export const getReservationById = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const reservation = await reservationService.getReservationById(req.params.id, restaurantId);
     sendSuccess(res, "Reservation retrieved successfully", reservation);
   } catch (error) {
@@ -91,7 +63,7 @@ export const createReservation = async (req, res, next) => {
 
 export const updateReservation = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const reservation = await reservationService.updateReservation(req.params.id, req.body, restaurantId);
     sendSuccess(res, "Reservation updated successfully", reservation);
   } catch (error) {
@@ -101,7 +73,7 @@ export const updateReservation = async (req, res, next) => {
 
 export const updateReservationStatus = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const reservation = await reservationService.updateReservationStatus(req.params.id, req.body.status, req.user.userId, restaurantId);
     sendSuccess(res, "Reservation status updated successfully", reservation);
   } catch (error) {
@@ -111,7 +83,7 @@ export const updateReservationStatus = async (req, res, next) => {
 
 export const deleteReservation = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     await reservationService.deleteReservation(req.params.id, restaurantId);
     sendSuccess(res, "Reservation deleted successfully");
   } catch (error) {

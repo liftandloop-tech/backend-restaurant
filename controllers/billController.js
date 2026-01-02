@@ -3,35 +3,7 @@ import * as billingService from "../services/billingService.js";
 import { sendSuccess } from "../utils/response.js";
 import { AppError } from "../utils/errorHandler.js";
 
-// Helper to resolve restaurantId
-const resolveRestaurantId = async (userId) => {
-  // Dynamic imports to avoid potential circular dependency issues
-  const User = (await import('../models/user.js')).default;
-  const Staff = (await import('../models/staff.js')).default;
-  const Restaurant = (await import('../models/restaurant.js')).default;
-
-  let restaurantId = null;
-  const user = await User.findById(userId);
-  if (user && user.restaurantId) {
-    restaurantId = user.restaurantId;
-  } else if (user) {
-    const restaurant = await Restaurant.findByOwner(user._id);
-    if (restaurant) {
-      restaurantId = restaurant._id;
-    } else {
-      const staff = await Staff.findById(userId);
-      if (staff && staff.restaurantId) {
-        restaurantId = staff.restaurantId;
-      }
-    }
-  } else {
-    const staff = await Staff.findById(userId);
-    if (staff && staff.restaurantId) {
-      restaurantId = staff.restaurantId;
-    }
-  }
-  return restaurantId;
-};
+import { resolveRestaurantId } from "../utils/context.js";
 
 export const createBill = async (req, res, next) => {
   try {
@@ -64,7 +36,7 @@ export const processPayment = async (req, res, next) => {
 
 export const getBills = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Bills retrieved successfully", []);
     }
@@ -81,7 +53,7 @@ export const getBills = async (req, res, next) => {
 
 export const getBillById = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const bill = await billingService.getBillById(req.params.id, restaurantId);
     sendSuccess(res, "Bill retrieved successfully", bill);
   } catch (error) {
@@ -93,7 +65,7 @@ export const processRefund = async (req, res, next) => {
   try {
     const { billId } = req.params;
     const { refundAmount, reason } = req.body;
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
     const bill = await billingService.processRefund(
       billId,
@@ -111,7 +83,7 @@ export const processRefund = async (req, res, next) => {
 export const printBill = async (req, res, next) => {
   try {
     const { billId } = req.params;
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
     // Get bill with populated order and cashier data
     const bill = await billingService.getBillById(billId, restaurantId);
@@ -153,7 +125,7 @@ export const printBill = async (req, res, next) => {
 export const getBillsByCashier = async (req, res, next) => {
   try {
     const { cashierId } = req.params;
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Bills retrieved successfully", []);
     }

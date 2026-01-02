@@ -154,13 +154,34 @@ export const getAllUsers = async (filters = {}) => {
 };
 
 export const getUserById = async (userId) => {
-  const user = await User.findById(userId).select('-password -refreshToken');
+  const user = await User.findById(userId).select('-password -refreshToken').lean();
   if (!user) {
     throw new AppError("User not found", 404);
   }
+//new
+  // Ensure restaurantId is included
+  if (!user.restaurantId) {
+    try {
+      const Restaurant = (await import('../models/restaurant.js')).default;
+      const restaurant = await Restaurant.findByOwner(user._id);
+      if (restaurant) {
+        user.restaurantId = restaurant._id;
+      } else {
+        // Fallback: Check if this user ID exists in Staff collection (rare edge case of mixed auth)
+        const Staff = (await import('../models/staff.js')).default;
+        const staff = await Staff.findById(userId);
+        if (staff && staff.restaurantId) {
+          user.restaurantId = staff.restaurantId;
+        }
+      }
+    } catch (err) {
+      console.warn("Error resolving restaurantId in getUserById:", err);
+    }
+  }
+
   return user;
 };
-
+//end
 export const updateProfile = async (userId, updateData) => {
   const allowedFields = ['name', 'mobile', 'email'];
   const updateFields = {};

@@ -5,7 +5,7 @@ import { resolveRestaurantId } from "../utils/context.js";
 
 export const getTables = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
     // Clean filters: remove "undefined", "null", "all" strings which might come from frontend
     const cleanQuery = {};
@@ -35,7 +35,7 @@ export const getTables = async (req, res, next) => {
 
 export const getTableById = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const table = await tableService.getTableById(req.params.id, restaurantId);
     sendSuccess(res, "Table retrieved successfully", table);
   } catch (error) {
@@ -47,7 +47,7 @@ export const getTableById = async (req, res, next) => {
 export const createTable = async (req, res, next) => {
   try {
     // Ensure user has a restaurant (create one if needed)
-    let restaurantId = await resolveRestaurantId(req.user.userId);
+    let restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       throw { statusCode: 400, message: "Restaurant context not found. Please ensure you are logged in correctly." };
     }
@@ -66,7 +66,7 @@ export const createTable = async (req, res, next) => {
 
 export const updateTable = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
     }
@@ -80,7 +80,7 @@ export const updateTable = async (req, res, next) => {
 
 export const updateTableStatus = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
     }
@@ -95,7 +95,7 @@ export const updateTableStatus = async (req, res, next) => {
 
 export const transferTable = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
     }
@@ -110,7 +110,7 @@ export const transferTable = async (req, res, next) => {
 
 export const completeCleaning = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
     }
@@ -125,7 +125,7 @@ export const completeCleaning = async (req, res, next) => {
 
 export const deleteTable = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });
     }

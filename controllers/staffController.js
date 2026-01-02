@@ -16,7 +16,7 @@ export const registerStaffController = async (req, res, next) => {
 
         if (!restaurantId) {
             // Ensure user has a restaurant (create one if needed)
-            let resolved = await resolveRestaurantId(req.user.userId);
+            let resolved = await resolveRestaurantId(req.user.userId, req);
             if (resolved) restaurantId = resolved;
         }
 
@@ -59,7 +59,7 @@ export const loginStaffController = async (req, res, next) => {
 export const getAllStaffController = async (req, res, next) => {
     try {
         //new
-        let restaurantId = await resolveRestaurantId(req.user.userId);
+        let restaurantId = await resolveRestaurantId(req.user.userId, req);
 
         if (!restaurantId) {
             return response.success(res, "staff member retrieved successfully", {
@@ -202,7 +202,7 @@ export const getStaffStatsController = async (req, res, next) => {
     try {
         //new
         //new
-        let restaurantId = await resolveRestaurantId(req.user.userId);
+        let restaurantId = await resolveRestaurantId(req.user.userId, req);
 
         if (!restaurantId) {
             return response.success(res, "staff statistics retrieved successfully", {
@@ -267,7 +267,7 @@ export const getActiveStaffByRoleController = async (req, res, next) => {
             throw new AppError("Invalid role specified", 400)
         }
         //end
-        let restaurantId = await resolveRestaurantId(req.user.userId);
+        let restaurantId = await resolveRestaurantId(req.user.userId, req);
 
         if (!restaurantId) {
             return sendSuccess(res, `Active${role} staff retrieved successfully`, [])
@@ -291,7 +291,7 @@ export const getAllActiveStaffController = async (req, res, next) => {
         //new
         const Staff = (await import('../models/staff.js')).default;
 
-        let restaurantId = await resolveRestaurantId(req.user.userId);
+        let restaurantId = await resolveRestaurantId(req.user.userId, req);
 
         if (!restaurantId) {
             return sendSuccess(res, "Active staff by roll retrieved successfully", {
