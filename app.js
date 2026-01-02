@@ -87,7 +87,7 @@ const corsOptions = {
   origin: getAllowedOrigins(),
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Idempotency-Key', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-Idempotency-Key', 'Accept', 'x-restaurant-id'],
   exposedHeaders: ['X-Request-ID'],
   optionsSuccessStatus: 200,
   preflightContinue: false
@@ -106,7 +106,7 @@ app.use((req, res, next) => {
     if (allowedOrigins === true || (Array.isArray(allowedOrigins) && allowedOrigins.includes(origin))) {
       res.header('Access-Control-Allow-Origin', origin || '*');
       res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID, X-Idempotency-Key, Accept');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Request-ID, X-Idempotency-Key, Accept, x-restaurant-id');
       res.header('Access-Control-Allow-Credentials', 'true');
       res.header('Access-Control-Max-Age', '86400'); // 24 hours
       return res.sendStatus(200);
@@ -164,7 +164,7 @@ app.use("/api/v1/customers", customerRoutes);
 app.use("/api/v1/reports", reportRoutes);
 app.use("/api/v1/staff", staffRoutes);
 app.use("/api/v1/restaurants", restaurantRoutes);
-app.use("/api/v1/feedback",feedbackRoutes);
+app.use("/api/v1/feedback", feedbackRoutes);
 
 // Webhook routes (before error handler, needs raw body)
 app.use("/api/webhooks", webhookRoutes);
