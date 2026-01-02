@@ -106,7 +106,34 @@ export const changePassword = async (req, res, next) => {
     next(error);
   }
 };
+//new
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      throw new AppError("Email is required", 400);
+    }
+    const result = await userService.forgotPassword(email);
+    sendSuccess(res, "Email sent", result);
+  } catch (error) {
+    next(error);
+  }
+};
 
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+    if (!password) {
+      throw new AppError("New password is required", 400);
+    }
+    const result = await userService.resetPassword(token, password);
+    sendSuccess(res, "Password reset successful", result);
+  } catch (error) {
+    next(error);
+  }
+};
+// end
 // module.exports={
 // register,
 // login,

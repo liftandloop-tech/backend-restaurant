@@ -34,6 +34,32 @@ export const exportPDF = async (req, res, next) => {
 };
 
 /**
+ * Get Dashboard Stats (JSON)
+ */
+export const getDashboardStats = async (req, res, next) => {
+  try {
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
+    const filters = {
+      reportType: req.query.reportType || 'all',
+      dateRange: req.query.dateRange || 'This Month',
+      branch: req.query.branch || 'All Branches',
+      fromDate: req.query.fromDate,
+      toDate: req.query.toDate,
+      restaurantId: restaurantId
+    };
+
+    if (!restaurantId) {
+      return sendSuccess(res, "Report data generated successfully", {});
+    }
+
+    const reportData = await reportService.generateReportData(filters);
+    sendSuccess(res, "Report data generated successfully", reportData);
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Create a scheduled report
  */
 export const createScheduledReport = async (req, res, next) => {

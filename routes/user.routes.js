@@ -25,14 +25,17 @@ router.post("/user/login"
   userController.login);
 
 router.post("/refresh-token"
-  , validate(schemas.refreshToken),userController.refreshToken);
+  , validate(schemas.refreshToken), userController.refreshToken);
+
+router.post("/forgot-password", userController.forgotPassword);
+router.put("/reset-password/:token", userController.resetPassword);
 
 // Protected routes
 router.post("/user/logout"
-  , authMiddleware,userController.logout);
+  , authMiddleware, userController.logout);
 
 router.get("/user/get"
-  ,authMiddleware,requireRoles('Owner', 'Admin', 'Manager',), userController.getAllUsers);
+  , authMiddleware,requireRoles('Owner', 'Admin', 'Manager',), userController.getAllUsers);
 
 router.get("/get/user/by/:id"
   , authMiddleware,
@@ -40,7 +43,7 @@ router.get("/get/user/by/:id"
 
 // Profile routes - All authenticated users
 router.get("/user/profile"
-  ,authMiddleware, userController.getProfile);
+  , authMiddleware, userController.getProfile);
 router.put("/user/profile",
   authMiddleware, userController.updateProfile);
 

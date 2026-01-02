@@ -4,6 +4,8 @@ import User from "../models/user.js";
 import { AppError } from "../utils/errorHandler.js";
 import { addToBlacklist } from "../middlewares/auth.js";
 import { ROLES } from "../middlewares/roles.js";
+import crypto from 'crypto';
+import sendEmail from '../utils/email.js';
 
 // const jwt = require('jsonwebtoken')
 // const {ENV} = require('../config/env.js')
@@ -158,7 +160,7 @@ export const getUserById = async (userId) => {
   if (!user) {
     throw new AppError("User not found", 404);
   }
-//new
+  //new
   // Ensure restaurantId is included
   if (!user.restaurantId) {
     try {
@@ -287,6 +289,72 @@ export const changePassword = async (userId, oldPassword, newPassword) => {
   await user.save();
 
   return { message: "Password changed successfully" };
+};
+
+export const forgotPassword = async (email) => {
+  const user = await User.findOne({ email });
+  if (!user) {
+    throw new AppError('There is no user with that email address.', 404);
+  }
+
+  // Generate reset token
+  const resetToken = crypto.randomBytes(32).toString('hex');
+
+  // Hash it and set to resetPasswordToken field
+  user.resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  // Set expire time (10 minutes)
+  user.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
+
+  await user.save({ validateBeforeSave: false });
+
+  // Create reset URL
+  const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+
+  const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
+
+  try {
+    await sendEmail({
+      email: user.email,
+      subject: 'Password reset token',
+      message
+    });
+
+    return { message: 'Email sent' };
+  } catch (err) {
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save({ validateBeforeSave: false });
+    throw new AppError('Email could not be sent', 500);
+  }
+};
+
+export const resetPassword = async (token, newPassword) => {
+  // Get hashed token
+  const resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(token)
+    .digest('hex');
+
+  const user = await User.findOne({
+    resetPasswordToken,
+    resetPasswordExpire: { $gt: Date.now() }
+  });
+
+  if (!user) {
+    throw new AppError('Invalid token', 400);
+  }
+
+  // Set new password
+  user.password = newPassword;
+  user.resetPasswordToken = undefined;
+  user.resetPasswordExpire = undefined;
+  await user.save();
+
+  return { message: 'Password reset successful' };
 };
 //end
 export const generateAccessToken = (user) => {

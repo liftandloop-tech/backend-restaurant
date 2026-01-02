@@ -18,20 +18,24 @@ const router = express.Router();
 
 // All routes require authentication
 router.use(authMiddleware);
-
+// new 
 // Export PDF - All authenticated users can export
-router.get( "/export/pdf",  reportController.exportPDF);
+router.get("/export/pdf", reportController.exportPDF);
+
+// Get Dashboard Stats
+router.get("/dashboard-stats", reportController.getDashboardStats);
 
 // Schedule Report routes - All authenticated users can schedule
-router.post( "/schedule",  validate(schemas.scheduledReport),
-  reportController.createScheduledReport,requireRoles('Owner', 'Admin', 'Manager', 'Cashier', 'Waiter'),);
+router.post("/schedule", validate(schemas.scheduledReport),
+  reportController.createScheduledReport, requireRoles('Owner', 'Admin', 'Manager', 'Cashier', 'Waiter'),);
 
-router.get( "/schedule",  reportController.getScheduledReports);
+router.get("/schedule", reportController.getScheduledReports);
 
-router.put( "/schedule/:id", 
+router.put("/schedule/:id",
   reportController.updateScheduledReport);
 
-router.delete( "/schedule/:id",  reportController.deleteScheduledReport);
+router.delete("/schedule/:id", reportController.deleteScheduledReport);
 
 export default router;
 //module.exports=router;
+// end
