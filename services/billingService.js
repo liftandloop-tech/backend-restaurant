@@ -127,11 +127,12 @@ export const processPayment = async (billId, paymentData, cashierId, idempotency
     return cached;
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // Transaction support removed for standalone MongoDB compatibility
+  // const session = await mongoose.startSession();
+  // session.startTransaction();
 
   try {
-    const bill = await Bill.findById(billId).session(session);
+    const bill = await Bill.findById(billId);
 
     if (!bill) {
       throw new AppError("Bill not found", 404);
@@ -154,20 +155,19 @@ export const processPayment = async (billId, paymentData, cashierId, idempotency
       gatewayResponse,
       idempotencyKey,
       processedBy: cashierId
-    }], { session });
+    }]);
 
     // Update bill
     bill.paid = true;
     bill.paidAt = new Date();
     bill.paymentMethod = paymentMethod;
     bill.transactionId = transactionId || payment[0].paymentId;
-    await bill.save({ session });
+    await bill.save();
 
     // Update order status if needed
     await Order.findByIdAndUpdate(
       bill.orderId,
-      { status: 'completed' },
-      { session }
+      { status: 'completed' }
     );
     // new for w
     // Add bill amount to restaurant account
@@ -182,7 +182,7 @@ export const processPayment = async (billId, paymentData, cashierId, idempotency
 
       // If still no restaurantId, try to find from cashier
       if (!restaurantIdToUpdate) {
-        const cashier = await User.findById(cashierId).session(session);
+        const cashier = await User.findById(cashierId);
         if (cashier && cashier.restaurantId) {
           restaurantIdToUpdate = cashier.restaurantId;
         }
@@ -198,7 +198,7 @@ export const processPayment = async (billId, paymentData, cashierId, idempotency
       console.error('Failed to update restaurant account:', restaurantError);
     }
     // end
-    await session.commitTransaction();
+    // await session.commitTransaction();
 
     const result = {
       bill: await Bill.findById(bill._id).populate('orderId').populate('cashierId', 'name email'),
@@ -210,10 +210,10 @@ export const processPayment = async (billId, paymentData, cashierId, idempotency
 
     return result;
   } catch (error) {
-    await session.abortTransaction();
+    // await session.abortTransaction();
     throw error;
   } finally {
-    session.endSession();
+    // session.endSession();
   }
 };
 
@@ -281,11 +281,11 @@ export const getBillsByCashier = async (cashierId, cashierRole, restaurantId) =>
 };
 
 export const processRefund = async (billId, refundAmount, reason, cashierId, restaurantId) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // const session = await mongoose.startSession();
+  // session.startTransaction();
 
   try {
-    const bill = await Bill.findById(billId).session(session);
+    const bill = await Bill.findById(billId);
 
     if (!bill) {
       throw new AppError("Bill not found", 404);
@@ -305,30 +305,30 @@ export const processRefund = async (billId, refundAmount, reason, cashierId, res
     }
 
     // Update payment
-    const payment = await Payment.findOne({ billId: bill._id }).session(session);
+    const payment = await Payment.findOne({ billId: bill._id });
     if (payment) {
       payment.refunded = true;
       payment.refundedAt = new Date();
       payment.refundAmount = refundAmount;
-      await payment.save({ session });
+      await payment.save();
     }
 
     // Update bill
     bill.refunded = true;
     bill.refundedAt = new Date();
     bill.refundAmount = refundAmount;
-    await bill.save({ session });
+    await bill.save();
 
-    await session.commitTransaction();
+    // await session.commitTransaction();
 
     return await Bill.findById(bill._id)
       .populate('orderId')
       .populate('cashierId', 'name email');
   } catch (error) {
-    await session.abortTransaction();
+    // await session.abortTransaction();
     throw error;
   } finally {
-    session.endSession();
+    // session.endSession();
   }
 };
 
