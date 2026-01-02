@@ -285,21 +285,6 @@ export const getActiveStaffByRoleController = async (req, res, next) => {
 
 // get all active staff grouped by role
 
-
-// export const getAllActiveStaffController = async (req, res, next) => {
-//     try {
-//         const Staff = (await import('../models/staff.js')).default;
-//         const roles = ['Waiter', 'Kitchen', 'Cashier', 'Manager', 'Admin', 'Owner'];
-
-//         const activeStaffByRole = {};
-
-//         for (const role of roles) {
-//             const staff = await Staff.find({
-//                 role: role,
-//                 isActive: true
-//             }).select('fullName email phoneNumber username')
-//                 .sort({ fullName: 1 });
-
 export const getAllActiveStaffController = async (req, res, next) => {
     try {
         //new

@@ -16,7 +16,7 @@ export const createOrder = async (req, res, next) => {
 
 export const getOrders = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
     if (!restaurantId) {
       return sendSuccess(res, "Orders retrieved successfully", [])
@@ -31,7 +31,7 @@ export const getOrders = async (req, res, next) => {
 export const getOrderById = async (req, res, next) => {
   try {
 
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
     const order = await orderService.getOrderById(req.params.id, restaurantId);
     sendSuccess(res, "Orders retrieved successfully", order);
@@ -47,7 +47,7 @@ export const updateOrder = async (req, res, next) => {
     // For now, let's assume service will check order.restaurantId matches user's.
     // Update: Let's fetch it for consistency.
 
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
     const order = await orderService.updateOrder(
       req.params.id,
@@ -64,7 +64,7 @@ export const updateOrder = async (req, res, next) => {
 export const updateOrderStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
     const order = await orderService.updateOrderStatus(
       req.params.id,
@@ -83,7 +83,7 @@ export const updateOrderStatus = async (req, res, next) => {
 
 export const confirmOrder = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
     const order = await orderService.confirmOrder(
       req.params.id,
@@ -101,23 +101,23 @@ export const getOrdersByStatus = async (req, res, next) => {
   try {
     const { status } = req.params;
 
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
     if (!restaurantId) {
       return sendSuccess(res, `Orders with status '${status}' retrieved succwssfully`, []);
     }
 
-      const orders = await orderService.getOrdersByStatus(status, req.user.userId,req.user.role, restaurantId);
-      sendSuccess(res, `Order with status '${status}' retrieved successfully`,orders);
-  }catch (error) {
-    next (error);
+    const orders = await orderService.getOrdersByStatus(status, req.user.userId, req.user.role, restaurantId);
+    sendSuccess(res, `Order with status '${status}' retrieved successfully`, orders);
+  } catch (error) {
+    next(error);
   }
 }
 
 export const cancelOrder = async (req, res, next) => {
   try {
     const { reason } = req.body;
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
     const order = await orderService.cancelOrder(
       req.params.id,

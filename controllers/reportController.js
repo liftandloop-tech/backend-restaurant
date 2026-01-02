@@ -2,42 +2,14 @@
 import * as reportService from "../services/reportService.js";
 import { sendSuccess } from "../utils/response.js";
 
-// Helper to resolve restaurantId
-const resolveRestaurantId = async (userId) => {
-  // Dynamic imports to avoid potential circular dependency issues
-  const User = (await import('../models/user.js')).default;
-  const Staff = (await import('../models/staff.js')).default;
-  const Restaurant = (await import('../models/restaurant.js')).default;
-
-  let restaurantId = null;
-  const user = await User.findById(userId);
-  if (user && user.restaurantId) {
-    restaurantId = user.restaurantId;
-  } else if (user) {
-    const restaurant = await Restaurant.findByOwner(user._id);
-    if (restaurant) {
-      restaurantId = restaurant._id;
-    } else {
-      const staff = await Staff.findById(userId);
-      if (staff && staff.restaurantId) {
-        restaurantId = staff.restaurantId;
-      }
-    }
-  } else {
-    const staff = await Staff.findById(userId);
-    if (staff && staff.restaurantId) {
-      restaurantId = staff.restaurantId;
-    }
-  }
-  return restaurantId;
-};
+import { resolveRestaurantId } from "../utils/context.js";
 
 /**
  * Export PDF report
  */
 export const exportPDF = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const filters = {
       reportType: req.query.reportType || 'all',
       dateRange: req.query.dateRange || 'This Month',
@@ -67,7 +39,7 @@ export const exportPDF = async (req, res, next) => {
 export const createScheduledReport = async (req, res, next) => {
   try {
     const userId = req.user.id;
-    const restaurantId = await resolveRestaurantId(userId);
+    const restaurantId = await resolveRestaurantId(userId, req);
 
     if (!restaurantId) {
       return res.status(400).json({ success: false, message: "Restaurant not found for this user" });

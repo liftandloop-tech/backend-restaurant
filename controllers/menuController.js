@@ -7,7 +7,7 @@ import { resolveRestaurantId } from "../utils/context.js";
 
 export const getCategories = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
     // clean filters
     const cleanQuery = {};
@@ -39,7 +39,7 @@ export const createCategory = async (req, res, next) => {
   try {
 
     // Ensure user has a restaurant (create one if needed) 
-    let restaurantId = await resolveRestaurantId(req.user.userId);
+    let restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       throw { statusCode: 400, message: "Restaurant context not found. Please ensure you are logged in correctly." };
     }
@@ -56,7 +56,7 @@ export const createCategory = async (req, res, next) => {
 
 export const updateCategory = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const category = await menuService.updateCategory(req.params.id, req.body, restaurantId);
     sendSuccess(res, "Category updated successfully", category);
   } catch (error) {
@@ -66,7 +66,7 @@ export const updateCategory = async (req, res, next) => {
 
 export const deleteCategory = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     await menuService.deleteCategory(req.params.id, restaurantId);
     sendSuccess(res, "Category deleted successfully");
   } catch (error) {
@@ -76,7 +76,7 @@ export const deleteCategory = async (req, res, next) => {
 
 export const getMenuItems = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     // clean filters
     const cleanQuery = {};
     Object.keys(req.query).forEach(key => {
@@ -105,7 +105,7 @@ export const getMenuItems = async (req, res, next) => {
 
 export const getMenuItemById = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const item = await menuService.getMenuItemById(req.params.id, restaurantId);
     sendSuccess(res, "Menu item retrieved successfully", item);
   } catch (error) {
@@ -116,7 +116,7 @@ export const getMenuItemById = async (req, res, next) => {
 export const createMenuItem = async (req, res, next) => {
   try {
     // Ensure user has a restaurant (create one if needed)
-    let restaurantId = await resolveRestaurantId(req.user.userId);
+    let restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       throw { statusCode: 400, message: "Restaurant context not found. Please ensure you are logged in correctly." };
     }
@@ -135,7 +135,7 @@ export const createMenuItem = async (req, res, next) => {
 
 export const updateMenuItem = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const item = await menuService.updateMenuItem(req.params.id, req.body, restaurantId);
     sendSuccess(res, "Menu item updated successfully", item);
   } catch (error) {
@@ -145,7 +145,7 @@ export const updateMenuItem = async (req, res, next) => {
 
 export const deleteMenuItem = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     await menuService.deleteMenuItem(req.params.id, restaurantId);
     sendSuccess(res, "Menu item deleted successfully");
   } catch (error) {

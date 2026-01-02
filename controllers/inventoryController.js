@@ -9,7 +9,7 @@ import { resolveRestaurantId } from "../utils/context.js";
 
 export const getInventoryItems = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Inventory items retrieved successfully", []);
     }//end
@@ -27,7 +27,7 @@ export const getInventoryItems = async (req, res, next) => {
 
 export const getInventoryItemById = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const item = await inventoryService.getInventoryItemById(req.params.id, restaurantId);
     sendSuccess(res, "Inventory item retrieved successfully", item);
   } catch (error) {
@@ -37,7 +37,7 @@ export const getInventoryItemById = async (req, res, next) => {
 
 export const createInventoryItem = async (req, res, next) => {
   try {//new
-    let restaurantId = await resolveRestaurantId(req.user.userId);
+    let restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       throw { statusCode: 400, message: "Restaurant context not found. Please ensure you are logged in correctly." };
     }
@@ -56,7 +56,7 @@ export const createInventoryItem = async (req, res, next) => {
 
 export const updateInventoryItem = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const items = await inventoryService.updateInventoryItem(req.params.id, req.body, restaurantId);
     sendSuccess(res, "Inventory item updated successfully", items);
   } catch (error) {
@@ -66,7 +66,7 @@ export const updateInventoryItem = async (req, res, next) => {
 
 export const deleteInventoryItem = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     await inventoryService.deleteInventoryItem(req.params.id, restaurantId);
     sendSuccess(res, "Inventory item deleted successfully");
   } catch (error) {
@@ -76,7 +76,7 @@ export const deleteInventoryItem = async (req, res, next) => {
 
 export const getLowStockItems = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Low stock items retrieved successfully", []);
     }
@@ -91,7 +91,7 @@ export const getLowStockItems = async (req, res, next) => {
 // Vendors 
 export const getVendors = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Vendors retrieved successfully", []);
     }
@@ -105,7 +105,7 @@ export const getVendors = async (req, res, next) => {
 
 export const createVendor = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) throw new Error("Restaurant not found");
     const data = { ...req.body, restaurantId: restaurantId };
     const vendor = await inventoryService.createVendor(data);
@@ -118,7 +118,7 @@ export const createVendor = async (req, res, next) => {
 // purchese orders
 export const getPurchaseOrders = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Purchase orders retrieved successfully", []);
     }
@@ -132,7 +132,7 @@ export const getPurchaseOrders = async (req, res, next) => {
 
 export const createPurchaseOrder = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       throw new Error("Restaurant not found for user");
     }
@@ -146,7 +146,7 @@ export const createPurchaseOrder = async (req, res, next) => {
 
 export const updatePurchaseOrderStatus = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const po = await inventoryService.updatePurchaseOrderStatus(req.params.id, req.body.status, restaurantId);
     sendSuccess(res, "Purchase order status update successfully", po);
   } catch (error) {
@@ -157,7 +157,7 @@ export const updatePurchaseOrderStatus = async (req, res, next) => {
 // Wastage 
 export const getWastage = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Wastage records retrieved successfully", []);
     }
@@ -171,7 +171,7 @@ export const getWastage = async (req, res, next) => {
 
 export const createWastage = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) throw new Error("Restaurant not found");
     const data = { ...req.body, restaurantId: restaurantId };
     const wastage = await inventoryService.createWastage(data);

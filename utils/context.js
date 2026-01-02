@@ -1,10 +1,25 @@
 //total new
 // Helper to resolve restaurantId
-export const resolveRestaurantId = async (userId) => {
+export const resolveRestaurantId = async (userId, req = null) => {
     // Dynamic imports to avoid potential circular dependency issues
     const User = (await import('../models/user.js')).default;
     const Staff = (await import('../models/staff.js')).default;
     const Restaurant = (await import('../models/restaurant.js')).default;
+
+    // 0. Check explicit context from request (if provided)
+    if (req) {
+        // Check headers first (most secure/standard way for frontend to pass context)
+        if (req.headers && req.headers['x-restaurant-id']) {
+            return req.headers['x-restaurant-id'];
+        }
+        // Check body/query (useful for initial setups or debugging)
+        if (req.body && req.body.restaurantId) {
+            return req.body.restaurantId;
+        }
+        if (req.query && req.query.restaurantId) {
+            return req.query.restaurantId;
+        }
+    }
 
     let restaurantId = null;
 

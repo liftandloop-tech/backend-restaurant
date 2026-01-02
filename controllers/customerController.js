@@ -6,7 +6,7 @@ import { resolveRestaurantId } from "../utils/context.js";
 
 export const getCustomers = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
       return sendSuccess(res, "Customers retrieved successfully", []);
     }
@@ -23,7 +23,7 @@ export const getCustomers = async (req, res, next) => {
 
 export const getCustomerById = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const customer = await customerService.getCustomerById(req.params.id, restaurantId);
     sendSuccess(res, "Customer retrieved successfully", customer);
   } catch (error) {
@@ -33,7 +33,7 @@ export const getCustomerById = async (req, res, next) => {
 
 export const createCustomer = async (req, res, next) => {
   try {
-    let restaurantId = await resolveRestaurantId(req.user.userId);
+    let restaurantId = await resolveRestaurantId(req.user.userId, req);
 
     if (!restaurantId) {
       throw { statusCode: 400, message: "Restaurant context not found. Please ensure you are logged in correctly." };
@@ -53,7 +53,7 @@ export const createCustomer = async (req, res, next) => {
 
 export const updateCustomer = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const customer = await customerService.updateCustomer(req.params.id, req.body, restaurantId);
     sendSuccess(res, "Customer updated successfully", customer);
   } catch (error) {
@@ -63,7 +63,7 @@ export const updateCustomer = async (req, res, next) => {
 
 export const deleteCustomer = async (req, res, next) => {
   try {
-    const restaurantId = await resolveRestaurantId(req.user.userId);
+    const restaurantId = await resolveRestaurantId(req.user.userId, req);
     await customerService.deleteCustomer(req.params.id, restaurantId);
     sendSuccess(res, "Customer deleted successfully");
   } catch (error) {
