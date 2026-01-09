@@ -3,8 +3,6 @@ import { sendSuccess } from "../utils/response.js";
 
 
 //new
-import { AppError } from "../utils/errorHandler.js";
-
 import { resolveRestaurantId } from "../utils/context.js";
 
 export const getInventoryItems = async (req, res, next) => {
