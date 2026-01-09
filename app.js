@@ -67,7 +67,13 @@ const app = express();
 // Build allowed origins list
 const getAllowedOrigins = () => {
   // Default allowed origins for development
-  const defaultOrigins = ['http://localhost:5174', 'http://localhost:5173', 'http://localhost:3000'];
+  const defaultOrigins = [
+    'http://localhost:5174',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://restaurant.quickxpos.com',
+    'https://quickxpos.com'
+  ];
 
   // If CORS_ORIGIN is '*', return true (allow all)
   if (ENV.CORS_ORIGIN === '*') {
