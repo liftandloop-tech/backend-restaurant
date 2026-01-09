@@ -284,7 +284,7 @@ export const getTopSellingItems = async (fromDate, toDate, limit = 10, restauran
 
   return topItems;
 };
-
+//new
 /**
  * Get staff performance statistics
  */
@@ -490,6 +490,7 @@ export const getRecentActivity = async (limit = 10, restaurantId) => {
       orderNumber: order.orderNumber,
       tableNumber: order.tableNumber,
       status: order.status,
+      items: order.items || [],
       total: order.total,
       waiter: order.waiterId ? {
         name: order.waiterId.name,

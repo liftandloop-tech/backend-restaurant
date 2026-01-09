@@ -75,6 +75,10 @@ const restaurantSchema = new mongoose.Schema({
     uppercase: true,
     trim: true
   },
+  licenseId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'license'
+  },
   licenseActivated: {
     type: Boolean,
     default: false

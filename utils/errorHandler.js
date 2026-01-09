@@ -75,6 +75,11 @@
     Error.captureStackTrace(this, this.constructor);
   }
 }
+export const catchAsync = (fn) => {
+  return (req, res, next) => {
+    fn(req, res, next).catch(next);
+  };
+};
 
 export default errorHandler;
 //module.exports= {errorHandler ,AppError}

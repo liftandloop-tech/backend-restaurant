@@ -13,9 +13,9 @@ const orderSchema = new mongoose.Schema({
     required: false,
     min: 1,
     validate: {
-      validator: function(value){
+      validator: function (value){
         //if sourec is dien in or takeaway, table number is required
-        if(this.source === 'dine-in' || this.source === 'takeaway'){
+        if (this.source === 'dine-in' || this.source === 'takeaway') {
             return value !== null && value  && value >= 1;
         }
         //phone and online orders can have null table number
@@ -30,12 +30,12 @@ const orderSchema = new mongoose.Schema({
     default: 'dine-in',
     index: true,
   },
-    items:[{
-      menuItemId: {
-         type: mongoose.Schema.Types.ObjectId,
-         ref: 'MenuItem'
-      },
-    
+    items: [{
+    menuItemId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'MenuItem'
+    },
+
     name: {
       type: String,
       required: true,
@@ -78,9 +78,8 @@ const orderSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['draft','pending', 'confirmed', 'preparing', 'ready', 'served', 'completed','cancelled'],
-    default: 'pending',
-    index: true
+    enum: ['draft', 'pending', 'confirmed', 'preparing', 'ready', 'served', 'completed', 'cancelled'],
+    default: 'pending'
   },
   waiterId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -88,13 +87,13 @@ const orderSchema = new mongoose.Schema({
     required: true
   },
 
-     cashierId:{
+  cashierId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Staff',
     required: false // set when cashier confirms order
   },
 
-  customerId:{
+  customerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Customer',
     required: false // Optional for walk-in customers
@@ -161,7 +160,7 @@ const orderSchema = new mongoose.Schema({
 });
 
 // Generate order number before saving
-orderSchema.pre('save', async function(next) {
+orderSchema.pre('save', async function (next) {
   if (!this.orderNumber) {
     const count = await mongoose.model('Order').countDocuments();
     this.orderNumber = `ORD-${Date.now()}-${String(count + 1).padStart(4, '0')}`;

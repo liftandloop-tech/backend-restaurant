@@ -182,6 +182,60 @@ export const createWastage = async (data) => {
 
   return wastage;
 };
+// new
+// Deduct stock based on order
+// Deduct stock based on order
+// Helper to infer ingredients based on item name (Fallback logic)
+const inferIngredientsFromName = (itemName) => {
+  const lowerName = itemName.toLowerCase();
+  const ingredients = [];
+
+  // 1. Base Staples (Onion, Garlic, Tomato) - Almost all Indian Mains/Starters use these
+  if (
+    lowerName.includes('curry') ||
+    lowerName.includes('masala') ||
+    lowerName.includes('gravy') ||
+    lowerName.includes('biryani') ||
+    lowerName.includes('fry') ||
+    lowerName.includes('tikka') ||
+    lowerName.includes('kebab') ||
+    lowerName.includes('kabab')
+  ) {
+    ingredients.push({ name: 'Onion', qty: 0.05 }); // 50g per portion
+    ingredients.push({ name: 'Tomato', qty: 0.05 }); // 50g
+    ingredients.push({ name: 'Garlic', qty: 0.01 }); // 10g
+    ingredients.push({ name: 'Ginger', qty: 0.01 }); // 10g
+    ingredients.push({ name: 'Oil', qty: 0.02 });    // 20ml
+  }
+
+  // 2. Specific Items
+  if (lowerName.includes('paneer')) {
+    ingredients.push({ name: 'Paneer', qty: 0.15 }); // 150g
+  }
+
+  if (lowerName.includes('chicken') || lowerName.includes('murgh')) {
+    ingredients.push({ name: 'Chicken', qty: 0.20 }); // 200g
+  }
+
+  if (lowerName.includes('potato') || lowerName.includes('aloo') || lowerName.includes('fries') || lowerName.includes('wedges')) {
+    ingredients.push({ name: 'Potato', qty: 0.20 }); // 200g
+  }
+
+  if (lowerName.includes('rice') || lowerName.includes('biryani') || lowerName.includes('pulao')) {
+    ingredients.push({ name: 'Rice', qty: 0.15 }); // 150g
+  }
+
+  if (lowerName.includes('dal') || lowerName.includes('lentil')) {
+    ingredients.push({ name: 'Dal', qty: 0.10 });
+    ingredients.push({ name: 'Lentils', qty: 0.10 });
+  }
+
+  if (lowerName.includes('pizza') || lowerName.includes('bread') || lowerName.includes('burger') || lowerName.includes('noodle') || lowerName.includes('pasta')) {
+    ingredients.push({ name: 'Flour', qty: 0.10 });
+  }
+
+  return ingredients;
+};
 
 // Deduct stock based on order
 export const deductStockForOrder = async (orderId) => {
@@ -192,19 +246,78 @@ export const deductStockForOrder = async (orderId) => {
   const order = await Order.findById(orderId);
   if (!order) return;
 
+  console.log(`Deducting stock for order ${order.orderNumber}`);
+
   for (const item of order.items) {
+    let ingredientsToDeduct = [];
+    let source = 'database'; // 'database' or 'heuristic'
+
+    // 1. Try to find strict recipe from Database
+    let menuItem = null;
     if (item.menuItemId) {
-      const menuItem = await MenuItem.findById(item.menuItemId);
-      if (menuItem && menuItem.ingredients && menuItem.ingredients.length > 0) {
-        for (const ingredient of menuItem.ingredients) {
-          if (ingredient.itemId) {
-            const qtyUsed = ingredient.quantity * item.qty;
-            await InventoryItem.findByIdAndUpdate(ingredient.itemId, {
-              $inc: { currentStock: -qtyUsed }
-            });
+      menuItem = await MenuItem.findById(item.menuItemId);
+    } else if (item.name) {
+      menuItem = await MenuItem.findOne({
+        name: { $regex: new RegExp(`^${item.name}$`, 'i') },
+        restaurantId: order.restaurantId
+      });
+    }
+
+    if (menuItem && menuItem.ingredients && menuItem.ingredients.length > 0) {
+      ingredientsToDeduct = menuItem.ingredients.map(ing => ({
+        itemId: ing.itemId,
+        name: null,
+        qty: ing.quantity
+      }));
+      source = 'database';
+    } else {
+      // 2. Fallback: Heuristic Deduction
+      const inferred = inferIngredientsFromName(item.name || '');
+      if (inferred.length > 0) {
+        ingredientsToDeduct = inferred;
+        source = 'heuristic';
+      }
+    }
+
+    if (ingredientsToDeduct.length > 0) {
+      console.log(`Processing deduction for ${item.name} (Source: ${source})`);
+
+      for (const ingredient of ingredientsToDeduct) {
+        const qtyUsed = ingredient.qty * item.qty;
+        let inventoryItem = null;
+
+        if (ingredient.itemId) {
+          inventoryItem = await InventoryItem.findById(ingredient.itemId);
+        } else if (ingredient.name) {
+          // Find inventory item by name (fuzzy match)
+          inventoryItem = await InventoryItem.findOne({
+            name: { $regex: new RegExp(`^${ingredient.name}$`, 'i') },
+            restaurantId: order.restaurantId
+          });
+        }
+
+        if (inventoryItem) {
+          const newStock = inventoryItem.currentStock - qtyUsed;
+
+          await InventoryItem.findByIdAndUpdate(inventoryItem._id, {
+            $inc: { currentStock: -qtyUsed }
+          });
+
+          console.log(`Deducted ${qtyUsed} ${inventoryItem.unit} of ${inventoryItem.name}. New Stock: ${newStock}`);
+
+          if (newStock <= (inventoryItem.minStockLevel || 0)) {
+            console.warn(`Low stock alert for ${inventoryItem.name}: ${newStock} left`);
+          }
+        } else {
+          if (source === 'heuristic') {
+            console.log(`Heuristic skipped: Inventory item '${ingredient.name}' not found in database.`);
+          } else {
+            console.warn(`Recipe ingredient missing in inventory DB (ID: ${ingredient.itemId})`);
           }
         }
       }
+    } else {
+      console.log(`No ingredients (recipe or basic) found for: ${item.name}`);
     }
   }
 };

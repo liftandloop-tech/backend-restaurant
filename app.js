@@ -38,6 +38,7 @@ import reportRoutes from "./routes/report.routes.js";
 import staffRoutes from "./routes/staff.routes.js";
 import restaurantRoutes from "./routes/restaurant.routes.js";
 import feedbackRoutes from "./routes/feedback.routes.js"
+import licenseRoutes from "./routes/license.routes.js";
 
 // const userRoutes = require('./routes/user.routes.js')
 // const orderRoutes = require('./routes/order.routes.js')
@@ -165,22 +166,29 @@ app.use("/api/v1/reports", reportRoutes);
 app.use("/api/v1/staff", staffRoutes);
 app.use("/api/v1/restaurants", restaurantRoutes);
 app.use("/api/v1/feedback", feedbackRoutes);
+app.use("/api/v1/license", licenseRoutes);
 
 // Webhook routes (before error handler, needs raw body)
 app.use("/api/webhooks", webhookRoutes);
 
 // Swagger docs (if enabled) - Loaded dynamically to avoid import errors
+// Swagger docs (if enabled) - Loaded dynamically to avoid import errors
 if (ENV.NODE_ENV === 'development') {
-  Promise.all([
-    import('swagger-ui-express'),
-    import('./docs/swagger.js')
-  ]).then(([swaggerUi, swaggerModule]) => {
-    const swaggerSpec = swaggerModule.default;
-    app.use('/api-docs', swaggerUi.default.serve, swaggerUi.default.setup(swaggerSpec));
-    console.log('Swagger docs available at /api-docs');
-  }).catch((error) => {
-    console.warn('Swagger not configured:', error.message);
-  });
+  const loadSwagger = async () => {
+    try {
+      const swaggerUi = await import('swagger-ui-express');
+      const swaggerModule = await import('./docs/swagger.js');
+      const swaggerSpec = swaggerModule.default;
+      app.use('/api-docs', swaggerUi.default.serve, swaggerUi.default.setup(swaggerSpec));
+      console.log('Swagger docs available at /api-docs');
+    } catch (error) {
+      // Suppress "Cannot find package" error if swagger is optional
+      if (error.code !== 'ERR_MODULE_NOT_FOUND') {
+        console.warn('Swagger configuration skipped:', error.message);
+      }
+    }
+  };
+  loadSwagger();
 }
 
 // 404 handler

@@ -196,8 +196,17 @@ export const createOrder = async (orderData, userId, userRole) => {
     }
   }   //end
   //end
+//new
 
-
+  // Deduct inventory stock immediately upon creation
+  try {
+    const inventoryService = await import('../services/inventoryService.js');
+    await inventoryService.deductStockForOrder(order._id);
+  } catch (invError) {
+    console.error('Failed to deduct inventory for new order:', invError);
+    // Continue without failing the order
+  }
+//end
   return await Order.findById(order._id)
     .populate('waiterId', 'fullName email role')
     .populate('customerId', 'name phone email')
@@ -505,7 +514,7 @@ export const cancelOrder = async (orderId, reason, userId, restaurantId) => {
   order.cancellationReason = reason;
 
   await order.save();
-//new
+  //new
   // Cancel associated KOTs
   try {
     const KOT = (await import('../models/KOT.js')).default;
