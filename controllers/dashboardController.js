@@ -1,4 +1,4 @@
-import * as dashboardService from "../Services/dashboardService.js";
+import * as dashboardService from "../services/dashboardService.js";
 import { sendSuccess } from "../utils/response.js";
 import { AppError } from "../utils/errorHandler.js";
 import { resolveRestaurantId } from "../utils/context.js";
