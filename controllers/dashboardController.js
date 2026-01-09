@@ -145,7 +145,7 @@ export const getRecentActivity = async (req, res, next) => {
     if (!restaurantId) {
       return sendSuccess(res, "Recent activity retrieved successfully", []);
     }
-    const activity = await dashboardService.getRecentActivity(from, to, restaurantId);
+    const activity = await dashboardService.getRecentActivity( limitNum,restaurantId);
     sendSuccess(res, "Recent activity retrieved successfully", activity);
   } catch (error) {
     next(error);

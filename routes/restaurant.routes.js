@@ -1,5 +1,5 @@
- // all new for w
- import express from "express";
+// all new for w
+import express from "express";
 import * as restaurantController from "../controllers/restaurantController.js";
 import { authMiddleware } from "../middlewares/auth.js";
 import { requireRoles } from "../middlewares/roles.js";
@@ -24,6 +24,7 @@ router.get("/get/:id", restaurantController.getRestaurant);
 
 // Get current user's restaurant - Restaurant owner
 router.get("/get/my", restaurantController.getMyRestaurant);
+router.get("/my-restaurant", restaurantController.getMyRestaurant);
 
 // Update restaurant - Restaurant owner or admin
 router.put("/update/:id", validate(schemas.updateRestaurant), restaurantController.updateRestaurant);
