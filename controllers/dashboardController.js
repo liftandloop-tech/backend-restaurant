@@ -1,4 +1,4 @@
-import * as dashboardService from "../services/dashboardService.js";
+import * as dashboardService from "../Services/dashboardService.js";
 import { sendSuccess } from "../utils/response.js";
 import { AppError } from "../utils/errorHandler.js";
 import { resolveRestaurantId } from "../utils/context.js";
@@ -145,7 +145,7 @@ export const getRecentActivity = async (req, res, next) => {
     if (!restaurantId) {
       return sendSuccess(res, "Recent activity retrieved successfully", []);
     }
-    const activity = await dashboardService.getRecentActivity( limitNum,restaurantId);
+    const activity = await dashboardService.getRecentActivity(limitNum, restaurantId);
     sendSuccess(res, "Recent activity retrieved successfully", activity);
   } catch (error) {
     next(error);
