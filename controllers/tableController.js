@@ -1,9 +1,9 @@
-import * as tableService from "../services/tableService.js";
-import { sendSuccess } from "../utils/response.js";
+const tableService = require("../services/tableService.js");
+const { sendSuccess } = require("../utils/response.js");
 
-import { resolveRestaurantId } from "../utils/context.js";
+const { resolveRestaurantId } = require("../utils/context.js");
 
-export const getTables = async (req, res, next) => {
+exports.getTables = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
@@ -33,7 +33,7 @@ export const getTables = async (req, res, next) => {
   }
 };
 
-export const getTableById = async (req, res, next) => {
+exports.getTableById = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const table = await tableService.getTableById(req.params.id, restaurantId);
@@ -44,7 +44,7 @@ export const getTableById = async (req, res, next) => {
 };
 
 
-export const createTable = async (req, res, next) => {
+exports.createTable = async (req, res, next) => {
   try {
     // Ensure user has a restaurant (create one if needed)
     let restaurantId = await resolveRestaurantId(req.user.userId, req);
@@ -64,7 +64,7 @@ export const createTable = async (req, res, next) => {
   }
 };
 
-export const updateTable = async (req, res, next) => {
+exports.updateTable = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
@@ -78,7 +78,7 @@ export const updateTable = async (req, res, next) => {
   }
 };
 
-export const updateTableStatus = async (req, res, next) => {
+exports.updateTableStatus = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
@@ -93,7 +93,7 @@ export const updateTableStatus = async (req, res, next) => {
 };
 
 
-export const transferTable = async (req, res, next) => {
+exports.transferTable = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
@@ -108,7 +108,7 @@ export const transferTable = async (req, res, next) => {
   }
 };
 
-export const completeCleaning = async (req, res, next) => {
+exports.completeCleaning = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
@@ -123,7 +123,7 @@ export const completeCleaning = async (req, res, next) => {
   }
 };
 
-export const deleteTable = async (req, res, next) => {
+exports.deleteTable = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {

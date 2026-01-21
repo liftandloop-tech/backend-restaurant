@@ -1,15 +1,13 @@
-import Order from "../models/order.js";
-import Bill from "../models/bill.js";
-import Payment from "../models/payment.js";
-import User from "../models/user.js";
-//new
-import KOT from "../models/KOT.js";
-import Table from "../models/table.js";
 
-/**
+const Bill = require("../models/bill.js");
+const Payment = require("../models/payment.js");
+const Order = require("../models/order.js");
+const User = require("../models/user.js");
+const KOT = require("../models/KOT.js")
+/** new 
  * Get today's dashboard summary with yesterday's comparison
  */
-export const getTodaySummary = async (restaurantId) => {
+exports.getTodaySummary = async (restaurantId) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
@@ -110,7 +108,7 @@ export const getTodaySummary = async (restaurantId) => {
   // We don't need to query KOTs here, just call inventoryService directly
   let lowStockItems = [];
   try {
-    const inventoryService = await import('../services/inventoryService.js');
+    const { default: inventoryService } = await import("../services/inventoryService.js");
     // Pass restaurantId filter
     lowStockItems = await inventoryService.getLowStockItems({ restaurantId });
   } catch (e) {
@@ -153,7 +151,7 @@ export const getTodaySummary = async (restaurantId) => {
 /**
  * Get sales statistics for a date range
  */
-export const getSalesStatistics = async (fromDate, toDate, restaurantId) => {
+exports.getSalesStatistics = async (fromDate, toDate, restaurantId) => {
   const from = new Date(fromDate);
   from.setHours(0, 0, 0, 0);
   const to = new Date(toDate);
@@ -238,7 +236,7 @@ export const getSalesStatistics = async (fromDate, toDate, restaurantId) => {
 /**
  * Get top selling items
  */
-export const getTopSellingItems = async (fromDate, toDate, limit = 10, restaurantId) => {
+exports.getTopSellingItems = async (fromDate, toDate, limit = 10, restaurantId) => {
   const from = new Date(fromDate);
   from.setHours(0, 0, 0, 0);
   const to = new Date(toDate);
@@ -288,7 +286,7 @@ export const getTopSellingItems = async (fromDate, toDate, limit = 10, restauran
 /**
  * Get staff performance statistics
  */
-export const getStaffPerformance = async (fromDate, toDate, restaurantId) => {
+exports.getStaffPerformance = async (fromDate, toDate, restaurantId) => {
   const from = new Date(fromDate);
   from.setHours(0, 0, 0, 0);
   const to = new Date(toDate);
@@ -393,7 +391,7 @@ export const getStaffPerformance = async (fromDate, toDate, restaurantId) => {
 /**
  * Get payment method breakdown
  */
-export const getPaymentMethodBreakdown = async (fromDate, toDate, restaurantId) => {
+exports.getPaymentMethodBreakdown = async (fromDate, toDate, restaurantId) => {
   const from = new Date(fromDate);
   from.setHours(0, 0, 0, 0);
   const to = new Date(toDate);
@@ -444,7 +442,7 @@ export const getPaymentMethodBreakdown = async (fromDate, toDate, restaurantId) 
 /**
  * Get recent activity (latest orders, bills, payments)
  */
-export const getRecentActivity = async (limit = 10, restaurantId) => {
+exports.getRecentActivity = async (limit = 10, restaurantId) => {
   const orderQuery = {};
   const billQuery = {};
   if (restaurantId) {
@@ -531,7 +529,7 @@ export const getRecentActivity = async (limit = 10, restaurantId) => {
 /**
  * Get dashboard overview (combines multiple statistics)
  */
-export const getDashboardOverview = async (fromDate, toDate, restaurantId) => {
+exports.getDashboardOverview = async (fromDate, toDate, restaurantId) => {
   const from = fromDate ? new Date(fromDate) : new Date();
   from.setHours(0, 0, 0, 0);
   const to = toDate ? new Date(toDate) : new Date();

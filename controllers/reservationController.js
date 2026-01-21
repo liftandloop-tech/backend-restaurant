@@ -1,10 +1,11 @@
-//total new
-import * as reservationService from "../services/reservationService.js";
-import { sendSuccess } from "../utils/response.js";
+// //total new
+// import * as reservationService from "../services/reservationService.js";
+const reservationService = require("../services/reservationService.js");
+const { sendSuccess   } =require ("../utils/response.js");
 
-import { resolveRestaurantId } from "../utils/context.js";
+const { resolveRestaurantId   } =require ("../utils/context.js");
 
-export const getReservations = async (req, res, next) => {
+exports. getReservations = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
@@ -33,7 +34,7 @@ export const getReservations = async (req, res, next) => {
   }
 };
 
-export const getReservationById = async (req, res, next) => {
+exports. getReservationById = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const reservation = await reservationService.getReservationById(req.params.id, restaurantId);
@@ -43,10 +44,10 @@ export const getReservationById = async (req, res, next) => {
   }
 };
 
-export const createReservation = async (req, res, next) => {
+exports. createReservation = async (req, res, next) => {
   try {
     // Ensure user has a restaurant (create one if needed)
-    const restaurantService = (await import('../services/restaurantService.js'));
+    const restaurantService = (require("../services/restaurantService.js"));
     const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
 
     const reservationData = {
@@ -61,7 +62,7 @@ export const createReservation = async (req, res, next) => {
   }
 };
 
-export const updateReservation = async (req, res, next) => {
+exports. updateReservation = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const reservation = await reservationService.updateReservation(req.params.id, req.body, restaurantId);
@@ -71,7 +72,7 @@ export const updateReservation = async (req, res, next) => {
   }
 };
 
-export const updateReservationStatus = async (req, res, next) => {
+exports. updateReservationStatus = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const reservation = await reservationService.updateReservationStatus(req.params.id, req.body.status, req.user.userId, restaurantId);
@@ -81,7 +82,7 @@ export const updateReservationStatus = async (req, res, next) => {
   }
 };
 
-export const deleteReservation = async (req, res, next) => {
+exports. deleteReservation = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     await reservationService.deleteReservation(req.params.id, restaurantId);

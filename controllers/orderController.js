@@ -1,11 +1,10 @@
-import * as orderService from "../services/orderService.js";
-import { sendSuccess, sendError } from "../utils/response.js";
-import { resolveRestaurantId } from "../utils/context.js";
+// import * as orderService from "../services/orderService.js";
+const orderService =require("../services/orderService.js");
+const { sendSuccess, sendError   } =require ("../utils/response.js");
+const { resolveRestaurantId   }=require( "../utils/context.js");
 
-// const{sendSuccess}=require('../utils/response.js')
-// const orderService=require('../services/orderService.js')
 
-export const createOrder = async (req, res, next) => {
+exports. createOrder = async (req, res, next) => {
   try {
     const order = await orderService.createOrder(req.validated, req.user.userId, req.user.role);
     sendSuccess(res, "Order created successfully", order, 201);
@@ -14,7 +13,7 @@ export const createOrder = async (req, res, next) => {
   }
 };
 
-export const getOrders = async (req, res, next) => {
+exports. getOrders = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
@@ -28,7 +27,7 @@ export const getOrders = async (req, res, next) => {
     next(error)
   }
 }
-export const getOrderById = async (req, res, next) => {
+exports. getOrderById = async (req, res, next) => {
   try {
 
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
@@ -39,7 +38,7 @@ export const getOrderById = async (req, res, next) => {
     next(error)
   }
 }
-export const updateOrder = async (req, res, next) => {
+exports. updateOrder = async (req, res, next) => {
   try {
     // Resolve restaurantId (though updateOrder handles it via order ownership check, passing it enforces strict mode)
     // For brevity, we let the service handle checking if order belongs to user's restaurant via the fetched order
@@ -61,7 +60,7 @@ export const updateOrder = async (req, res, next) => {
 
   }
 };
-export const updateOrderStatus = async (req, res, next) => {
+exports. updateOrderStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
@@ -81,7 +80,7 @@ export const updateOrderStatus = async (req, res, next) => {
 
 
 
-export const confirmOrder = async (req, res, next) => {
+exports. confirmOrder = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
@@ -97,7 +96,7 @@ export const confirmOrder = async (req, res, next) => {
   }
 };
 
-export const getOrdersByStatus = async (req, res, next) => {
+exports. getOrdersByStatus = async (req, res, next) => {
   try {
     const { status } = req.params;
 
@@ -114,7 +113,7 @@ export const getOrdersByStatus = async (req, res, next) => {
   }
 }
 
-export const cancelOrder = async (req, res, next) => {
+exports. cancelOrder = async (req, res, next) => {
   try {
     const { reason } = req.body;
     const restaurantId = await resolveRestaurantId(req.user.userId, req);

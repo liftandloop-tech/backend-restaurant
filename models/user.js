@@ -1,10 +1,6 @@
-import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
-import { ENV } from "../config/env.js";
-
-// const mongoose = require('mongoose')
-// const bcrypt = require('bcryptjs');
-// const{ENV}= require('../config/env.js');
+const mongoose =require("mongoose");
+const bcrypt=require("bcryptjs");
+ const{ENV}= require('../config/env.js');
 
 
 
@@ -53,6 +49,12 @@ const userSchema = new mongoose.Schema({
     trim: true
   },
 
+  licenseToken: {
+    type: String,
+    default: null,
+    trim: true
+},
+
   refreshToken: {
     type: String,
     select: false
@@ -70,9 +72,9 @@ const userSchema = new mongoose.Schema({
   },
   resetPasswordToken: String,
   resetPasswordExpire: Date
-  }, {
+}, {
   timestamps: true
- });
+});
 
 // Hash password before saving
 userSchema.pre('save', async function (next) {
@@ -96,6 +98,4 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 // Note: email index is automatically created by unique: true, so we don't need to explicitly add it
 userSchema.index({ role: 1 });
 userSchema.index({ isActive: 1 });
-
-export default mongoose.model("User", userSchema);
-//module.exports= mongoose.model('User',userSchema)
+module.exports = mongoose.model("User", userSchema);

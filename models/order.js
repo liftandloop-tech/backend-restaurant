@@ -1,7 +1,5 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-
-// const mongoose=require('mongoose')
 const orderSchema = new mongoose.Schema({
   orderNumber: {
     type: String,
@@ -13,10 +11,10 @@ const orderSchema = new mongoose.Schema({
     required: false,
     min: 1,
     validate: {
-      validator: function (value){
+      validator: function (value) {
         //if sourec is dien in or takeaway, table number is required
         if (this.source === 'dine-in' || this.source === 'takeaway') {
-            return value !== null && value  && value >= 1;
+          return value !== null && value && value >= 1;
         }
         //phone and online orders can have null table number
         return true;
@@ -30,7 +28,7 @@ const orderSchema = new mongoose.Schema({
     default: 'dine-in',
     index: true,
   },
-    items: [{
+  items: [{
     menuItemId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'MenuItem'
@@ -175,5 +173,4 @@ orderSchema.index({ tableNumber: 1, status: 1 });
 orderSchema.index({ waiterId: 1, createdAt: -1 });
 orderSchema.index({ source: 1, createdAt: -1 });
 
-export default mongoose.model("Order", orderSchema);
-//module.exports=mongoose.model('Order,orderSchama')
+module.exports = mongoose.model("Order", orderSchema);

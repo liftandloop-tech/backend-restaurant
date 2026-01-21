@@ -1,11 +1,12 @@
-//total new
-import * as billingService from "../services/billingService.js";
-import { sendSuccess } from "../utils/response.js";
-import { AppError } from "../utils/errorHandler.js";
+// //total new
+// import * as billingService from "../services/billingService.js";
+const billingService = require('../services/billingService.js');
+const { sendSuccess   }=require("../utils/response.js");
+const { AppError   } =require( "../utils/errorHandler.js");
 
-import { resolveRestaurantId } from "../utils/context.js";
+const { resolveRestaurantId   } =require("../utils/context.js");
 
-export const createBill = async (req, res, next) => {
+exports.createBill = async (req, res, next) => {
   try {
     const { orderId } = req.params;
     const { idempotencyKey } = req.body;
@@ -16,7 +17,7 @@ export const createBill = async (req, res, next) => {
   }
 };
 
-export const processPayment = async (req, res, next) => {
+exports.processPayment = async (req, res, next) => {
   try {
     const { billId } = req.params;
     const { paymentMethod, transactionId, gatewayResponse, idempotencyKey } = req.validated;
@@ -34,7 +35,7 @@ export const processPayment = async (req, res, next) => {
   }
 };
 
-export const getBills = async (req, res, next) => {
+exports. getBills = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
@@ -51,7 +52,7 @@ export const getBills = async (req, res, next) => {
   }
 };
 
-export const getBillById = async (req, res, next) => {
+exports.getBillById = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const bill = await billingService.getBillById(req.params.id, restaurantId);
@@ -61,7 +62,7 @@ export const getBillById = async (req, res, next) => {
   }
 };
 
-export const processRefund = async (req, res, next) => {
+exports. processRefund = async (req, res, next) => {
   try {
     const { billId } = req.params;
     const { refundAmount, reason } = req.body;
@@ -80,7 +81,7 @@ export const processRefund = async (req, res, next) => {
     next(error);
   }
 };
-export const printBill = async (req, res, next) => {
+exports. printBill = async (req, res, next) => {
   try {
     const { billId } = req.params;
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
@@ -104,7 +105,7 @@ export const printBill = async (req, res, next) => {
 
     //Remove KOTs associated with this order after bill is printed
     try {
-      const KOT = (await import("../models/KOT.js")).default;
+      const { default: KOT } = await import("../models/KOT.js");
       await KOT.deleteMany({ orderId: bill.orderId._id });
       console.log(`Removed ${await KOT.countDocuments({ orderId: bill.orderId._id })} KOTs for order ${bill.orderId.orderNumber}`);
 
@@ -122,7 +123,7 @@ export const printBill = async (req, res, next) => {
   }
 };
 
-export const getBillsByCashier = async (req, res, next) => {
+exports.getBillsByCashier = async (req, res, next) => {
   try {
     const { cashierId } = req.params;
     const restaurantId = await resolveRestaurantId(req.user.userId, req);

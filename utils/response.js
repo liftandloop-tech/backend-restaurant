@@ -1,37 +1,40 @@
-export const sendResponse = (res, status, message, data = null) => {
-   const response = {
+// const sendResponse = (res, status, message, data = null) => {
+//   const response = {
+//     success: status >= 200 && status < 300,
+//     message,
+//     ...(data !== null && { data })
+//   };
+const sendResponse = (res, status,message,data =null) =>{
+  const response ={
     success: status >= 200 && status < 300,
-    message,
-    ...(data !== null && { data })
-  };
+    message, 
+    ...(data !== null && {data})
+  }
+
   
-  res.status(status).json(response);
-};
+res.status(status).json(response);
+}
+const sendSuccess = (res, message, data = null, status = 200) => {
+  sendResponse(res,status,message, data);
+}
 
-export const sendSuccess = (res, message, data = null, status = 200) => {
-  sendResponse(res, status, message, data);
-};
-
- export const sendError = (res, message, status = 400, errors = null) => {
+ const sendError = (res, message, status = 400, errors = null) => {
   const response = {
-    success: false,
+    success:false,
     message,
-    ...(errors && { errors })
+    ...(errors && {errors})
   };
+ 
   
-  res.status(status).json(response);
-};
+res.status(status).json(response);
+}
 
-// const response = {
-//   success: sendSuccess,
-//   error: sendError,
-//   send: sendResponse
-// };
 const response = {
   success: sendSuccess,
   error: sendError,
   send: sendResponse
 }
 
-export default response;
-
+module.exports = {sendSuccess,sendError,sendResponse,success: sendSuccess,
+  error: sendError,
+ send: sendResponse};

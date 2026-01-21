@@ -1,17 +1,11 @@
 // all new for w
-import mongoose from "mongoose";
-import Restaurant from "../models/restaurant.js";
-import User from "../models/user.js";
-import Bill from "../models/bill.js";
-import { AppError } from "../utils/errorHandler.js";
+const mongoose =require("mongoose");
+const Restaurant=require("../models/restaurant.js");
+const User =require ("../models/user.js");
+const Bill =require ("../models/bill.js");
+const { AppError    } =require("../utils/errorHandler.js");
 
-// const mongoose = require('mongoose');
-// const Restaurant = require('../models/restaurant');
-// const User = require('../models/user');
-// const Bill = require('../models/bill');
-// const {AppError} = require('../utils/errorHandler');
-
-export const createRestaurant = async (restaurantData, ownerId) => {
+exports. createRestaurant = async (restaurantData, ownerId) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -71,7 +65,7 @@ export const createRestaurant = async (restaurantData, ownerId) => {
   }
 };
 
-export const getRestaurantById = async (restaurantId) => {
+exports. getRestaurantById = async (restaurantId) => {
   const restaurant = await Restaurant.findById(restaurantId)
     .populate('ownerId', 'name email phone')
     .populate('createdBy', 'name email')
@@ -84,7 +78,7 @@ export const getRestaurantById = async (restaurantId) => {
   return restaurant;
 };
 
-export const getRestaurantByOwner = async (ownerId) => {
+exports. getRestaurantByOwner = async (ownerId) => {
   const restaurant = await Restaurant.findByOwner(ownerId)
     .populate('ownerId', 'name email phone')
     .populate('createdBy', 'name email')
@@ -97,7 +91,7 @@ export const getRestaurantByOwner = async (ownerId) => {
   return restaurant;
 };
 
-export const updateRestaurant = async (restaurantId, updateData, updatedBy) => {
+exports. updateRestaurant = async (restaurantId, updateData, updatedBy) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -142,7 +136,7 @@ export const updateRestaurant = async (restaurantId, updateData, updatedBy) => {
   }
 };
 
-export const deleteRestaurant = async (restaurantId, deletedBy) => {
+exports. deleteRestaurant = async (restaurantId, deletedBy) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -173,7 +167,7 @@ export const deleteRestaurant = async (restaurantId, deletedBy) => {
   }
 };
 
-export const getAllRestaurants = async (filters = {}) => {
+exports. getAllRestaurants = async (filters = {}) => {
   const query = {};
 
   if (filters.isActive !== undefined) {
@@ -197,7 +191,7 @@ export const getAllRestaurants = async (filters = {}) => {
     .sort({ createdAt: -1 });
 };
 
-export const addBillToRestaurantAccount = async (restaurantId, billAmount, billId) => {
+exports. addBillToRestaurantAccount = async (restaurantId, billAmount, billId) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -254,7 +248,7 @@ export const addBillToRestaurantAccount = async (restaurantId, billAmount, billI
   }
 };
 
-export const getRestaurantStats = async (restaurantId) => {
+exports.getRestaurantStats = async (restaurantId) => {
   const restaurant = await Restaurant.findById(restaurantId);
 
   if (!restaurant) {
@@ -310,7 +304,7 @@ export const getRestaurantStats = async (restaurantId) => {
   };
 };
 
-export const updateRestaurantLicense = async (restaurantId, licenseKey, updatedBy) => {
+exports.updateRestaurantLicense = async (restaurantId, licenseKey, updatedBy) => {
   const session = await mongoose.startSession();
   session.startTransaction();
 
@@ -353,8 +347,8 @@ export const updateRestaurantLicense = async (restaurantId, licenseKey, updatedB
 };
 // new for w
 // Helper function to ensure user has a restaurant
-export const ensureUserHasRestaurant = async (userId) => {
-  const User = (await import('../models/user.js')).default;
+exports. ensureUserHasRestaurant = async (userId) => {
+  const { default: User } = await import("../models/user.js");
 
   // First check if user already has a restaurant
   const user = await User.findById(userId);
@@ -414,13 +408,13 @@ export const ensureUserHasRestaurant = async (userId) => {
 //new for w
 
 // Functions to update restaurant statistics
-export const updateRestaurantStats = async (restaurantId) => {
+exports. updateRestaurantStats = async (restaurantId) => {
   try {
     // Import models dynamically to avoid circular dependencies
-    const User = (await import('../models/user.js')).default;
-    const Staff = (await import('../models/staff.js')).default;
-    const Customer = (await import('../models/customer.js')).default;
-    const Table = (await import('../models/table.js')).default;
+    const { default: User } = await import("../models/user.js");
+    const { default: Staff } = await import("../models/staff.js");
+    const { default: Customer } = await import("../models/customer.js");
+    const { default: Table } = await import("../models/table.js");
 
     // Count active staff (both User and Staff models)
     const activeStaffCount = await Staff.countDocuments({
@@ -496,7 +490,7 @@ export const updateRestaurantStats = async (restaurantId) => {
 };
 
 // Helper functions to increment/decrement specific stats
-export const incrementRestaurantStat = async (restaurantId, statName, amount = 1) => {
+exports. incrementRestaurantStat = async (restaurantId, statName, amount = 1) => {
   try {
     const updateObj = {};
     updateObj[statName] = amount; // This will increment by the amount
@@ -510,7 +504,7 @@ export const incrementRestaurantStat = async (restaurantId, statName, amount = 1
   }
 };
 
-export const decrementRestaurantStat = async (restaurantId, statName, amount = 1) => {
+exports. decrementRestaurantStat = async (restaurantId, statName, amount = 1) => {
   try {
     const updateObj = {};
     updateObj[statName] = -amount; // This will decrement by the amount
@@ -525,16 +519,16 @@ export const decrementRestaurantStat = async (restaurantId, statName, amount = 1
 };
 
 // Function to recalculate all statistics for a restaurant (useful for data repair)
-export const recalculateRestaurantStats = async (restaurantId) => {
+exports. recalculateRestaurantStats = async (restaurantId) => {
   try {
     console.log(`Recalculating statistics for restaurant: ${restaurantId}`);
 
     // Import models dynamically to avoid circular dependencies
-    const User = (await import('../models/user.js')).default;
-    const Staff = (await import('../models/staff.js')).default;
-    const Customer = (await import('../models/customer.js')).default;
-    const Table = (await import('../models/table.js')).default;
-    const Order = (await import('../models/order.js')).default;
+    const { default: User } = await import("../models/user.js");
+    const { default: Staff } = await import("../models/staff.js");
+    const { default: Customer } = await import("../models/customer.js");
+    const { default: Table } = await import("../models/table.js");
+    const { default: Order } = await import("../models/order.js");
 
     // Count active staff (both User and Staff models)
     const activeStaffCount = await Staff.countDocuments({

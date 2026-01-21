@@ -1,59 +1,31 @@
-import express from "express";
-import cors from "cors";
-import morgan from "morgan";
-import { ENV } from "./config/env.js";
-import { connectDB } from "./config/db.js";
-import { errorHandler } from "./utils/errorHandler.js";
-import { sanitize } from "./utils/sanitizer.js";
-import { requestIdMiddleware } from "./middlewares/request-id.js";
-//import { generalLimiter } from "./middlewares/rate-limit.js";
-import { idempotencyMiddleware } from "./utils/idempotency.js";
-
-// const express = require('express')
-// const cors = require('cors')
-// const morgan= require('morgan')
-// const {ENV}= require('./config/env.js')
-// const {connectDB}= require('./config/db.js')
-// const errorHandler= require('./utils/errorHandler.js')
-// const {sanitize}= require('./utils/sanitizer.js')
-// const {requestIdMiddleware}= require('./middlewares/request-id.js')
-// const {generalLimiter}= require('./middlewares/rate-limit.js')
-// const {idempotencyMiddleware}= require('./utils/idempotency.js')
+const express = require("express")
+const cors = require("cors")
+const morgan = require('morgan')
+const { ENV } = require('./config/env.js')
+const { connectDB } = require('./config/db.js')
+const { errorHandler } = require('./utils/errorHandler.js')
+const { sanitize } = require('./utils/sanitizer.js')
+const { requestIdMiddleware } = require('./middlewares/request-id.js')
+const { idempotencyMiddleware } = require('./utils/idempotency.js')
 
 // Routes
-import userRoutes from "./routes/user.routes.js";
-//import staffRoutes from "./routes/staff.routes.js";
-import orderRoutes from "./routes/order.routes.js";
-import kotRoutes from "./routes/kot.routes.js";
-import billRoutes from "./routes/bill.routes.js";
-import dashboardRoutes from "./routes/dashboard.routes.js";
-import webhookRoutes from "./routes/webhook.routes.js";
-import menuRoutes from "./routes/menu.routes.js";
-import tableRoutes from "./routes/table.routes.js";
-import reservationRoutes from "./routes/reservation.routes.js";
-import offerRoutes from "./routes/offer.routes.js";
-import inventoryRoutes from "./routes/inventory.routes.js";
-import customerRoutes from "./routes/customer.routes.js";
-import reportRoutes from "./routes/report.routes.js";
-import staffRoutes from "./routes/staff.routes.js";
-import restaurantRoutes from "./routes/restaurant.routes.js";
-import feedbackRoutes from "./routes/feedback.routes.js"
-import licenseRoutes from "./routes/license.routes.js";
-
-// const userRoutes = require('./routes/user.routes.js')
-// const orderRoutes = require('./routes/order.routes.js')
-// const kotRoutes= require('./routes/kot.routes.js')
-// const billRoutes= require('./routes/bill.routes.js')
-// const dashboardRoutes= require('./routes/dashboard.routes.js')
-// const webhookRoutes= require('./routes/webhook.routes.js')
-// const menuRoutes= require('./routes/menu.routes.js')
-// const tableRoutes= require('./routes/table.routes.js')
-// const reservationRoutes= require('./routes/reservation.routes.js')
-// const offerRoutes= require('./routes/offer.routes.js')
-// const customerRoutes= require('./routes/customer.routes.js')
-// const reportRoutes= require('./routes/report.routes.js')
-// const inventoryRoutes= require('./routes/inventory.routes.js')
-
+const userRoutes = require("./routes/user.routes.js");
+const orderRoutes = require("./routes/order.routes.js");
+const kotRoutes = require("./routes/kot.routes.js");
+const billRoutes = require("./routes/bill.routes.js");
+const dashboardRoutes = require("./routes/dashboard.routes.js");
+const webhookRoutes = require("./routes/webhook.routes.js");
+const menuRoutes = require("./routes/menu.routes.js");
+const tableRoutes = require("./routes/table.routes.js");
+const reservationRoutes = require("./routes/reservation.routes.js");
+const offerRoutes = require("./routes/offer.routes.js");
+const inventoryRoutes = require("./routes/inventory.routes.js");
+const customerRoutes = require("./routes/customer.routes.js");
+const reportRoutes = require("./routes/report.routes.js");
+const staffRoutes = require("./routes/staff.routes.js");
+const restaurantRoutes = require("./routes/restaurant.routes.js");
+const feedbackRoutes = require("./routes/feedback.routes.js");
+const licenseRoutes = require("./routes/license.routes.js");
 
 // Initialize database
 connectDB();
@@ -140,9 +112,6 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(sanitize);
 
 
-// Rate limiting
-//app.use(generalLimiter);
-
 // Idempotency middleware (for payment endpoints)
 app.use(idempotencyMiddleware);
 
@@ -178,7 +147,6 @@ app.use("/api/v1/license", licenseRoutes);
 app.use("/api/webhooks", webhookRoutes);
 
 // Swagger docs (if enabled) - Loaded dynamically to avoid import errors
-// Swagger docs (if enabled) - Loaded dynamically to avoid import errors
 if (ENV.NODE_ENV === 'development') {
   const loadSwagger = async () => {
     try {
@@ -188,7 +156,6 @@ if (ENV.NODE_ENV === 'development') {
       app.use('/api-docs', swaggerUi.default.serve, swaggerUi.default.setup(swaggerSpec));
       console.log('Swagger docs available at /api-docs');
     } catch (error) {
-      // Suppress "Cannot find package" error if swagger is optional
       if (error.code !== 'ERR_MODULE_NOT_FOUND') {
         console.warn('Swagger configuration skipped:', error.message);
       }
@@ -209,5 +176,6 @@ app.use((req, res) => {
 // Error handling (must be last)
 app.use(errorHandler);
 
-export default app;
-//module.exports= app;
+// export default app;
+
+module.exports = app;

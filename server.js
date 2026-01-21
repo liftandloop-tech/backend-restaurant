@@ -1,24 +1,13 @@
-import http from "http";
-import { Server } from "socket.io";
-import app from "./app.js";
-import { ENV } from "./config/env.js";
-import { connectDB } from "./config/db.js";
-import { kitchenSocket } from "./sockets/kitchen.js";
-import { waiterSocket } from "./sockets/waiter.js";
-import { cashierSocket } from "./sockets/cashier.js";
-import { initializePrinters } from "./config/printer.js";
-import { logger } from "./utils/logger.js";
-
-// const http=require( "http");
-// const { Server } =require ("socket.io");
-// const app =require ("./app.js");
-// const { ENV }=require ("./config/env.js");
-// const { connectDB }=require("./config/db.js");
-// const { kitchenSocket } =require ("./sockets/kitchen.js");
-// const { waiterSocket } =require("./sockets/waiter.js");
-// const { cashierSocket } =require ("./sockets/cashier.js");
-// const { initializePrinters } =require("./config/printer.js");
-// const { logger }=require("./utils/logger.js");
+const  http =require( "http");
+const { Server   } =require("socket.io");
+const app  =require("./app.js");
+const { ENV   } =require( "./config/env.js");
+const  { connectDB   } =require("./config/db.js");
+const { kitchenSocket   } =require( "./sockets/kitchen.js");
+const { waiterSocket   } =require("./sockets/waiter.js");
+const { cashierSocket   } =require( "./sockets/cashier.js");
+const { initializePrinters   } =require ("./config/printer.js");
+const { logger   } =require( "./utils/logger.js");
 
 // Connect to database
 connectDB();
@@ -41,11 +30,11 @@ const io = new Server(server, {
 io.use(async (socket, next) => {
   try {
     const token = socket.handshake.auth?.token || socket.handshake.query?.token;
-    
+
     if (!token) {
       return next(new Error("Authentication token required"));
     }
-    
+
     // Token verification will be done in individual socket handlers
     // This is just a basic check
     next();
@@ -56,20 +45,20 @@ io.use(async (socket, next) => {
 
 // Socket.io connection
 io.on("connection", (socket) => {
-  logger.info("New client connected", { 
+  logger.info("New client connected", {
     socketId: socket.id,
-    address: socket.handshake.address 
+    address: socket.handshake.address
   });
-  
+
   // Initialize socket channels
   kitchenSocket(io, socket);
   waiterSocket(io, socket);
   cashierSocket(io, socket);
-  
+
   socket.on("disconnect", (reason) => {
-    logger.info("Client disconnected", { 
+    logger.info("Client disconnected", {
       socketId: socket.id,
-      reason 
+      reason
     });
   });
 });
@@ -82,14 +71,14 @@ initializePrinters().catch(error => {
 // Helper function to check and kill process on a specific port (Windows)
 async function killProcessOnPort(port) {
   try {
-    const { exec } = await import('child_process');
-    const { promisify } = await import('util');
+    const { exec } = await import("child_process");
+    const { promisify } = await import("util");
     const execAsync = promisify(exec);
-    
+
     // Find process using the port
     const { stdout } = await execAsync(`netstat -ano | findstr :${port}`);
     const lines = stdout.split('\n').filter(line => line.includes('LISTENING'));
-    
+
     if (lines.length > 0) {
       const pids = new Set();
       lines.forEach(line => {
@@ -98,7 +87,7 @@ async function killProcessOnPort(port) {
           pids.add(match[1]);
         }
       });
-      
+
       // Kill each process
       for (const pid of pids) {
         try {
@@ -121,10 +110,10 @@ async function killProcessOnPort(port) {
 // Helper function to check if port is in use
 async function isPortInUse(port) {
   try {
-    const { exec } = await import('child_process');
-    const { promisify } = await import('util');
+    const { exec  } = await import("child_process");
+    const { promisify  } = await import("util");
     const execAsync = promisify(exec);
-    
+
     const { stdout } = await execAsync(`netstat -ano | findstr :${port}`);
     return stdout.includes('LISTENING');
   } catch (error) {
@@ -142,7 +131,7 @@ const startServer = async () => {
     if (await isPortInUse(PORT)) {
       console.log(` Port ${PORT} is already in use. Attempting to free it...`);
       const killed = await killProcessOnPort(PORT);
-      
+
       if (!killed) {
         logger.error(`Port ${PORT} is already in use and could not be freed automatically.`);
         console.error(`\n Error: Port ${PORT} is already in use and could not be freed automatically.`);
@@ -153,7 +142,7 @@ const startServer = async () => {
         process.exit(1);
       }
     }
-    
+
     // Start the server
     server.listen(PORT, () => {
       console.log(` Server running on http://localhost:${PORT}`);
@@ -161,9 +150,9 @@ const startServer = async () => {
         environment: ENV.NODE_ENV,
         port: PORT,
         timestamp: new Date().toISOString()
-        
+
       });
-      
+
       if (ENV.NODE_ENV === 'development') {
         console.log(` API Docs: http://localhost:${PORT}/api-docs`);
       }
@@ -206,5 +195,5 @@ process.on('SIGINT', () => {
   });
 });
 
-export { io };
-//module.exports={io}
+// export { io };
+module.exports ={io};

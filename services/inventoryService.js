@@ -1,11 +1,7 @@
-import InventoryItem from "../models/inventory.js";
-import { AppError } from "../utils/errorHandler.js";
+const InventoryItem = require("../models/inventory.js");
+const { AppError } = require("../utils/errorHandler.js");
 
-
-// const InventoryItem = require('../models/inventory.js')
-// const {AppError} = require('../utils/errorHandler.js')
-
-export const getInventoryItems = async (filters = {}) => {
+exports.getInventoryItems = async (filters = {}) => {
   const query = {};
   if (filters.category) query.category = filters.category;
   if (filters.search) {
@@ -18,7 +14,7 @@ export const getInventoryItems = async (filters = {}) => {
   return await InventoryItem.find(query).sort({ name: 1 });
 };
 
-export const getInventoryItemById = async (id, restaurantId) => {
+exports.getInventoryItemById = async (id, restaurantId) => {
   const query = { _id: id };
   if (restaurantId) query.restaurantId = restaurantId;
 
@@ -29,12 +25,12 @@ export const getInventoryItemById = async (id, restaurantId) => {
   return item;
 };
 //new for w
-export const createInventoryItem = async (data) => {
+exports.createInventoryItem = async (data) => {
   const item = await InventoryItem.create(data);
 
   // Update restaurant statistics
   try {
-    const restaurantService = await import('../services/restaurantService.js');
+    const { default: restaurantService } = await import("../services/restaurantService.js");
     await restaurantService.incrementRestaurantStat(data.restaurantId, 'totalInventoryItems');
   } catch (error) {
     console.error('Error updating restaurant stats after inventory item creation:', error);
@@ -43,7 +39,7 @@ export const createInventoryItem = async (data) => {
   return item;
 };
 // end
-export const updateInventoryItem = async (id, data, restaurantId) => {
+exports.updateInventoryItem = async (id, data, restaurantId) => {
   const query = { _id: id };
   if (restaurantId) query.restaurantId = restaurantId;
 
@@ -54,7 +50,7 @@ export const updateInventoryItem = async (id, data, restaurantId) => {
   return item;
 };
 // new for w
-export const deleteInventoryItem = async (id, restaurantId) => {
+exports.deleteInventoryItem = async (id, restaurantId) => {
   const query = { _id: id };
   if (restaurantId) query.restaurantId = restaurantId;
 
@@ -70,7 +66,7 @@ export const deleteInventoryItem = async (id, restaurantId) => {
 
   // Update restaurant statistics
   try {
-    const restaurantService = await import('../services/restaurantService.js');
+    const { default: restaurantService } = await import("../services/restaurantService.js");
     await restaurantService.decrementRestaurantStat(itemRestaurantId, 'totalInventoryItems');
   } catch (error) {
     console.error('Error updating restaurant stats after inventory item deletion:', error);
@@ -79,7 +75,7 @@ export const deleteInventoryItem = async (id, restaurantId) => {
   return item;
 };
 // end
-export const getLowStockItems = async (filters = {}) => {
+exports.getLowStockItems = async (filters = {}) => {
   const query = {
     $expr: { $lte: ['$currentStock', '$minStockLevel'] }
   };
@@ -90,21 +86,21 @@ export const getLowStockItems = async (filters = {}) => {
 };
 // new for w
 // Vendors
-export const getVendors = async (filters = {}) => {
-  const Vendor = (await import('../models/vendor.js')).default;
+exports.getVendors = async (filters = {}) => {
+  const { default: Vendor } = await import("../models/vendor.js");
   const query = {};
   if (filters.restaurantId) query.restaurantId = filters.restaurantId;
   return await Vendor.find(query).sort({ name: 1 });
 };
 
-export const createVendor = async (data) => {
-  const Vendor = (await import('../models/vendor.js')).default;
+exports.createVendor = async (data) => {
+  const { default: Vendor } = await import("../models/vendor.js");
   return await Vendor.create(data);
 };
 
 // Purchase Orders
-export const getPurchaseOrders = async (filters = {}) => {
-  const PurchaseOrder = (await import('../models/purchaseOrder.js')).default;
+exports.getPurchaseOrders = async (filters = {}) => {
+  const { default: PurchaseOrder } = await import("../models/purchaseOrder.js");
   const query = {};
   if (filters.restaurantId) query.restaurantId = filters.restaurantId;
   return await PurchaseOrder.find(query)
@@ -113,9 +109,9 @@ export const getPurchaseOrders = async (filters = {}) => {
     .sort({ createdAt: -1 });
 };
 
-export const createPurchaseOrder = async (data) => {
-  const PurchaseOrder = (await import('../models/purchaseOrder.js')).default;
-  const InventoryItem = (await import('../models/inventory.js')).default;
+exports.createPurchaseOrder = async (data) => {
+  const { default: PurchaseOrder } = await import("../models/purchaseOrder.js");
+  const { default: InventoryItem } = await import("../models/inventory.js");
 
   const po = await PurchaseOrder.create(data);
 
@@ -131,9 +127,9 @@ export const createPurchaseOrder = async (data) => {
   return po;
 };
 
-export const updatePurchaseOrderStatus = async (id, status, restaurantId) => {
-  const PurchaseOrder = (await import('../models/purchaseOrder.js')).default;
-  const InventoryItem = (await import('../models/inventory.js')).default;
+exports.updatePurchaseOrderStatus = async (id, status, restaurantId) => {
+  const { default: PurchaseOrder } = await import("../models/purchaseOrder.js");
+  const { default: InventoryItem } = await import("../models/inventory.js");
 
   const po = await PurchaseOrder.findById(id);
   if (!po) throw new AppError("Purchase order not found", 404);
@@ -160,8 +156,8 @@ export const updatePurchaseOrderStatus = async (id, status, restaurantId) => {
 };
 
 // Wastage
-export const getWastage = async (filters = {}) => {
-  const Wastage = (await import('../models/wastage.js')).default;
+exports.getWastage = async (filters = {}) => {
+  const { default: Wastage } = await import("../models/wastage.js");
   const query = {};
   if (filters.restaurantId) query.restaurantId = filters.restaurantId;
   return await Wastage.find(query)
@@ -169,9 +165,9 @@ export const getWastage = async (filters = {}) => {
     .sort({ date: -1 });
 };
 
-export const createWastage = async (data) => {
-  const Wastage = (await import('../models/wastage.js')).default;
-  const InventoryItem = (await import('../models/inventory.js')).default;
+exports.createWastage = async (data) => {
+  const { default: Wastage } = await import("../models/wastage.js");
+  const { default: InventoryItem } = await import("../models/inventory.js");
 
   const wastage = await Wastage.create(data);
 
@@ -238,10 +234,10 @@ const inferIngredientsFromName = (itemName) => {
 };
 
 // Deduct stock based on order
-export const deductStockForOrder = async (orderId) => {
-  const Order = (await import('../models/order.js')).default;
-  const MenuItem = (await import('../models/menu.js')).default;
-  const InventoryItem = (await import('../models/inventory.js')).default;
+exports.deductStockForOrder = async (orderId) => {
+  const { default: Order } = await import("../models/order.js");
+  const { default: MenuItem } = await import("../models/menu.js");
+  const { default: InventoryItem } = await import("../models/inventory.js");
 
   const order = await Order.findById(orderId);
   if (!order) return;

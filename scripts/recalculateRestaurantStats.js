@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
-import Restaurant from '../models/restaurant.js';
-import { recalculateRestaurantStats } from '../services/restaurantService.js';
+const mongoose =require ("mongoose");
+const Restaurant =require("../models/restaurant.js");
+const { recalculateRestaurantStats       } =require("../services/restaurantService.js");
 
 /**
  * Script to recalculate statistics for all restaurants
@@ -56,4 +56,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     });
 }
 
-export default recalculateAllRestaurantStats;
+module.exports = recalculateAllRestaurantStats;

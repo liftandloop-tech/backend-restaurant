@@ -1,7 +1,7 @@
 
 
-import mongoose from 'mongoose'
-import bcrypt from 'bcryptjs'
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
 
 
 
@@ -159,4 +159,5 @@ staffSchema.methods.toJSON = function () {
     delete staffObject.password;
     return staffObject;
 };
-export default mongoose.model('Staff', staffSchema)
+
+module.exports = mongoose.model('Staff', staffSchema)

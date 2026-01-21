@@ -1,20 +1,32 @@
-import jwt from "jsonwebtoken";
-import { ENV } from "../config/env.js";
-import User from "../models/user.js";
-import { AppError } from "../utils/errorHandler.js";
-import { addToBlacklist } from "../middlewares/auth.js";
-import { ROLES } from "../middlewares/roles.js";
-import crypto from 'crypto';
-import sendEmail from '../utils/email.js';
+const jwt = require("jsonwebtoken");
+const { ENV } = require("../config/env.js");
+const User = require("../models/user.js");
+const { AppError } = require("../utils/errorHandler.js");
+const { addToBlacklist } = require("../middlewares/auth.js");
+const { ROLES } = require("../middlewares/roles.js");
+const crypto = require("crypto");
+const sendEmail = require("../utils/email.js");
 
-// const jwt = require('jsonwebtoken')
-// const {ENV} = require('../config/env.js')
-// const User= require('../models/user.js')
-// const {AppError}= require('../utils/errorHandler.js')
-// const {ROLES} = require('../middlewares/roles.js')
-// const {addToBlacklist}=require('../middlewares/auth.js')
+const generateAccessToken = (user) => {
+  return jwt.sign(
+    {
+      userId: user._id,
+      email: user.eamil,
+      role:user.role
+    },
+    ENV.JWT_SECRET,
+    { expiresIn: ENV.JWT_ACCESS_EXPIRE }
+  );
+};
 
-export const registerUser = async (userData) => {
+const generateRefreshToken = (user) => {
+  return jwt.sign(
+    { userId: user._id },
+    ENV.JWT_SECRET,
+    { expiresIn: ENV.JWT_REFRESH_EXPIRE }
+  );
+};
+exports.registerUser = async (userData) => {
   const { email, password, name, role } = userData;
 
   // Check if user exists
@@ -23,12 +35,17 @@ export const registerUser = async (userData) => {
     throw new AppError("User with this email already exists", 409);
   }
 
+  // Generate license token
+  const licenseToken =`REQ-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+  console.log("Generated License Token for new user:", licenseToken);
+
   // Create user
   const user = await User.create({
     email,
     password,
     name,
-    role
+    role,
+    licenseToken
   });
 
   // Generate tokens
@@ -45,14 +62,15 @@ export const registerUser = async (userData) => {
       id: user._id,
       email: user.email,
       name: user.name,
-      role: user.role
+      role: user.role,
+      licenseToken: user.licenseToken // Return token
     },
     accessToken,
     refreshToken
   };
 };
 
-export const loginUser = async (email, password,) => {
+exports.loginUser = async (email, password) => {
   // Find user by email only (mobile is optional)
   const user = await User.findOne({ email }).select('+password +refreshToken +refreshTokenExpiry');
 
@@ -63,10 +81,17 @@ export const loginUser = async (email, password,) => {
   if (!user.isActive) {
     throw new AppError("Account is deactivated", 403);
   }
+//new
+  // Ensure license token exists for existing users
+  if (!user.licenseToken) {
+    user.licenseToken = `REQ-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 5).toUpperCase()}`;
+    await user.save({ validateBeforeSave: false });
+    console.log("Generated missing License Token for logging-in user:", user.licenseToken);
+  }
 
   // Check if user has a restaurant or needs one created
   try {
-    const restaurantService = await import("./restaurantService.js");
+    const restaurantService = require("./restaurantService.js");
     const restaurant = await restaurantService.ensureUserHasRestaurant(user._id);
     // If a restaurant was found or created, update the user object in memory
     if (restaurant) {
@@ -76,7 +101,7 @@ export const loginUser = async (email, password,) => {
     console.warn("Could not ensure restaurant for user:", error.message);
     // Continue login even if restaurant creation fails (e.g. for staff who don't need to own one)
   }
-
+//end
   // Update last login
   user.lastLogin = new Date();
 
@@ -96,7 +121,8 @@ export const loginUser = async (email, password,) => {
       email: user.email,
       name: user.name,
       role: user.role,
-      restaurantId: user.restaurantId
+      restaurantId: user.restaurantId,
+      licenseToken: user.licenseToken // Return token
     },
     accessToken,
     refreshToken
@@ -112,7 +138,7 @@ export const loginUser = async (email, password,) => {
   return result;
 }
 
-export const refreshAccessToken = async (refreshToken) => {
+exports.refreshAccessToken = async (refreshToken) => {
   if (!refreshToken) {
     throw new AppError("Refresh token required", 401);
   }
@@ -133,7 +159,7 @@ export const refreshAccessToken = async (refreshToken) => {
   return { accessToken };
 };
 
-export const logoutUser = async (userId, token) => {
+exports.logoutUser = async (userId, token) => {
   const user = await User.findById(userId);
   if (user) {
     user.refreshToken = undefined;
@@ -147,7 +173,7 @@ export const logoutUser = async (userId, token) => {
   }
 };
 
-export const getAllUsers = async (filters = {}) => {
+exports.getAllUsers = async (filters = {}) => {
   const query = {};
   if (filters.role) query.role = filters.role;
   if (filters.isActive !== undefined) query.isActive = filters.isActive;
@@ -155,7 +181,7 @@ export const getAllUsers = async (filters = {}) => {
   return await User.find(query).select('-password -refreshToken').sort({ createdAt: -1 });
 };
 
-export const getUserById = async (userId) => {
+exports.getUserById = async (userId) => {
   const user = await User.findById(userId).select('-password -refreshToken').lean();
   if (!user) {
     throw new AppError("User not found", 404);
@@ -164,13 +190,13 @@ export const getUserById = async (userId) => {
   // Ensure restaurantId is included
   if (!user.restaurantId) {
     try {
-      const Restaurant = (await import('../models/restaurant.js')).default;
+      const Restaurant = require("../models/restaurant.js");
       const restaurant = await Restaurant.findByOwner(user._id);
       if (restaurant) {
         user.restaurantId = restaurant._id;
       } else {
         // Fallback: Check if this user ID exists in Staff collection (rare edge case of mixed auth)
-        const Staff = (await import('../models/staff.js')).default;
+        const Staff = require("../models/staff.js");
         const staff = await Staff.findById(userId);
         if (staff && staff.restaurantId) {
           user.restaurantId = staff.restaurantId;
@@ -184,7 +210,7 @@ export const getUserById = async (userId) => {
   return user;
 };
 //end
-export const updateProfile = async (userId, updateData) => {
+exports.updateProfile = async (userId, updateData) => {
   const allowedFields = ['name', 'mobile', 'email'];
   const updateFields = {};
 
@@ -219,7 +245,7 @@ export const updateProfile = async (userId, updateData) => {
   return user;
 };
 
-export const updateUserRole = async (targetUserId, newRole, actingUser) => {
+exports.updateUserRole = async (targetUserId, newRole, actingUser) => {
   const allowedRoles = Object.values(ROLES);
   if (!allowedRoles.includes(newRole)) {
     throw new AppError("Invalid role supplied", 400);
@@ -250,7 +276,7 @@ export const updateUserRole = async (targetUserId, newRole, actingUser) => {
   if (!wasStaff && isStaff && targetUser.restaurantId) {
     // User became staff - increment count
     try {
-      const restaurantService = await import('../services/restaurantService.js');
+      const restaurantService = require("../services/restaurantService.js");
       await restaurantService.incrementRestaurantStat(targetUser.restaurantId, 'totalStaff');
     } catch (error) {
       console.error('Error updating restaurant stats after role change:', error);
@@ -258,7 +284,7 @@ export const updateUserRole = async (targetUserId, newRole, actingUser) => {
   } else if (wasStaff && !isStaff && targetUser.restaurantId) {
     // User stopped being staff - decrement count
     try {
-      const restaurantService = await import('../services/restaurantService.js');
+      const restaurantService = require("../services/restaurantService.js");
       await restaurantService.decrementRestaurantStat(targetUser.restaurantId, 'totalStaff');
     } catch (error) {
       console.error('Error updating restaurant stats after role change:', error);
@@ -273,8 +299,11 @@ export const updateUserRole = async (targetUserId, newRole, actingUser) => {
     isActive: targetUser.isActive
   };
 };
+
+exports.generateAccessToken = generateAccessToken;
+exports.generateRefreshToken = generateRefreshToken;
 //new
-export const changePassword = async (userId, oldPassword, newPassword) => {
+exports.changePassword = async (userId, oldPassword, newPassword) => {
   const user = await User.findById(userId).select('+password');
   if (!user) {
     throw new AppError("User not found", 404);
@@ -291,7 +320,7 @@ export const changePassword = async (userId, oldPassword, newPassword) => {
   return { message: "Password changed successfully" };
 };
 
-export const forgotPassword = async (email) => {
+exports.forgotPassword = async (email) => {
   const user = await User.findOne({ email });
   if (!user) {
     throw new AppError('There is no user with that email address.', 404);
@@ -332,7 +361,7 @@ export const forgotPassword = async (email) => {
   }
 };
 
-export const resetPassword = async (token, newPassword) => {
+exports.resetPassword = async (token, newPassword) => {
   // Get hashed token
   const resetPasswordToken = crypto
     .createHash('sha256')
@@ -357,7 +386,7 @@ export const resetPassword = async (token, newPassword) => {
   return { message: 'Password reset successful' };
 };
 //end
-export const generateAccessToken = (user) => {
+exports.generateAccessToken = (user) => {
   return jwt.sign(
     {
       userId: user._id,
@@ -368,14 +397,14 @@ export const generateAccessToken = (user) => {
     { expiresIn: ENV.JWT_ACCESS_EXPIRE }
   );
 };
-export const generateRefreshToken = (user) => {
+exports.generateRefreshToken = (user) => {
   return jwt.sign(
     { userId: user._id },
     ENV.JWT_SECRET,
     { expiresIn: ENV.JWT_REFRESH_EXPIRE }
   );
 };
-// //module.exports={registerUser,
+// //export default {registerUser,
 //   loginUser,
 //   logoutUser,
 //   refreshAccessToken,

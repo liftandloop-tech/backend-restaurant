@@ -1,14 +1,8 @@
-import express from "express";
-import * as customerController from "../controllers/customerController.js";
-import { authMiddleware } from "../middlewares/auth.js";
-import { requireRoles } from "../middlewares/roles.js";
 
-
-// const express = require('express')
-// const customerController = require('../controllers/customerController.js')
-// const{authMiddleware} = require('../middlewares/auth.js')
-// const {requireRoles} = require('../middlewares/roles.js')
-// const {generalLimiter} = require('../middlewares/rate-limit.js')
+const express = require("express");
+const customerController = require("../controllers/customerController.js");
+const { authMiddleware } = require("../middlewares/auth.js");
+const { requireRoles } = require("../middlewares/roles.js");
 
 
 const router = express.Router();
@@ -21,6 +15,5 @@ router.post("/create/customer", requireRoles('Owner', 'Admin', 'Manager', 'Waite
 router.put("/update/customer/by/id", requireRoles('Owner', 'Admin', 'Manager', 'Cashier'), customerController.updateCustomer);
 router.delete("/delete/customer/by/id", requireRoles('Owner', 'Admin', 'Manager', 'Cashier'), customerController.deleteCustomer);
 
-export default router;
+module.exports = router;
 
-//module.exports=router

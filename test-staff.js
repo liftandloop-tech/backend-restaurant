@@ -1,6 +1,6 @@
 // Test script to check if staff registration works
-import fetch from 'node-fetch';
-import mongoose from 'mongoose';
+const fetch =require("node-fetch");
+const mongoose =require("mongoose");
 
 const BASE_URL = 'http://localhost:3000/api/v1';
 

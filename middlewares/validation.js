@@ -1,8 +1,9 @@
-import Joi from "joi";
-//const Joi=require('joi');
-import { Schema } from 'mongoose';
+const Joi = require("joi");
 
-export const validate = (schema) => {
+//  import { Schema       } from "mongoose";
+// import { updateUserRole       } from "../services/userService.js";
+
+const validate = (schema) => {
   return (req, res, next) => {
     const { error, value } = schema.validate(req.body, {
       abortEarly: false,
@@ -28,13 +29,9 @@ export const validate = (schema) => {
 };
 
 // //new validtore function
-// export const validateLogin = validate(schemas.login)
-// export const validateStaffRegistration = validate(schemas.staffRegistration)
-// export const validateStaffUpdate = validate(schemas.staffUpdate)
-// export const validatePasswordChange = validate(schemas.passwordChange)
 
 // Common validation schemas
-export const schemas = {
+const schemas = {
   register: Joi.object({
     name: Joi.string().min(2).max(50).required(),
     email: Joi.string().email().required(),
@@ -64,12 +61,12 @@ export const schemas = {
   }),
 
   order: Joi.object({
-    // new for w
+
     tableNumber: Joi.number().integer().min(1).when('source', {
-      is: Joi.valid('dine-in', 'takeaway'),
+      is: Joi.valid('dine-in', ' takeaway'),
       then: Joi.required(),
       otherwise: Joi.optional()
-    }),//end
+    }),
     items: Joi.array().items(
       Joi.object({
         name: Joi.string().required(),
@@ -82,7 +79,6 @@ export const schemas = {
     source: Joi.string().valid('dine-in', 'takeaway', 'online', 'phone').default('dine-in'),
 
     waiterId: Joi.string().hex().length(24).optional(),
-    //new for w
     customerId: Joi.string().hex().length(24).optional(),
     customerName: Joi.string().max(100).optional(),
     customerPhone: Joi.string().max(15).optional(),
@@ -90,7 +86,7 @@ export const schemas = {
     deliveryAddress: Joi.string().max(500).optional(),
     deliveryPhone: Joi.string().max(15).optional(),
     deliveryTime: Joi.string().max(50).optional(),
-    // end
+
     discount: Joi.object({
       type: Joi.string().valid('percentage', 'flat').required(),
       value: Joi.number().positive().required(),
@@ -121,7 +117,7 @@ export const schemas = {
     gatewayResponse: Joi.object().optional(),
     idempotencyKey: Joi.string().uuid().required()
   }),
-  //new
+
   inventoryItem: Joi.object({
     name: Joi.string().required().trim().max(100),
     category: Joi.string().optional(),
@@ -132,15 +128,19 @@ export const schemas = {
     pricePerUnit: Joi.number().positive().required(),
     vendor: Joi.string().trim().max(100).optional(),
     expiryDate: Joi.date().optional(),
-    batchNumber: Joi.string().max(50).optional(),
+    batchNumber: Joi.string().trim().max(100).optional(),
     location: Joi.string().trim().max(100).optional(),
-    notes: Joi.string().max(500).optional()
+    notes: Joi.string().max(500).optional(),
+
+
   }),
+
 
   kot: Joi.object({
     orderId: Joi.string().hex().length(24).required(),
     station: Joi.string().valid('kitchen', 'bar', 'beverage').required()
   }),
+
 
   updateUserRole: Joi.object({
     userId: Joi.string().hex().length(24).required(),
@@ -148,44 +148,46 @@ export const schemas = {
   }),
 
   reservation: Joi.object({
-    customerName: Joi.string().required().trim().min(2).max(50),
+    customerName: Joi.string().min(2).required().trim().max(50),
     customerPhone: Joi.string().required().trim(),
-    customerEmail: Joi.string().email().optional().allow(''),
-    tableNumber: Joi.number().integer().min(1).required(),
+    customerEmail: Joi.string().email().allow('').optional(),
+    customerNumber: Joi.number().integer().min(1).required(),
     reservationDate: Joi.date().required(),
     reservationTime: Joi.string().pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/).required(),
     numberOfGuests: Joi.number().integer().min(1).required(),
-    specialRequests: Joi.string().max(500).optional().allow('')
+    specialRequests: Joi.string().max(500).optional().allow(''),
+
   }),
 
+
   staffRegistration: Joi.object({
-    fullName: Joi.string().min(2).max(50).required(),
+    fullName: Joi.string().min(2).required().max(50),
     email: Joi.string().email().optional().allow('', null),
     phoneNumber: Joi.string().min(10).max(15).required(),
     username: Joi.string().min(3).max(30).required(),
-    role: Joi.string()
-      .valid("Manager", "Cashier", "Waiter", "Kitchen", "Admin", "Owner", "Delivery", "Bar")
-      .required(),
-    password: Joi.string().min(6).required(),
-    profilePicture: Joi.string().optional().allow('', null),
-    dateOfJoining: Joi.date().optional().allow('', null),
-    gender: Joi.string().valid("Male", "Female", "Other").optional().allow('', null),
-    branch: Joi.string().optional().allow('', null),
-    supervisor: Joi.string().optional().allow('', null),
-    shiftStart: Joi.string().optional().allow('', null),
-    shiftEnd: Joi.string().optional().allow('', null),
-    autoAddToAttendance: Joi.boolean().optional(),
-    baseSalary: Joi.number().min(0).optional().allow('', null),
-    paymentMode: Joi.string().optional().allow('', null),
-    tipCommissionEligible: Joi.boolean().optional(),
-    bankName: Joi.string().optional().allow('', null),
-    ifscCode: Joi.string().optional().allow('', null),
-    accountNumber: Joi.string().optional().allow('', null),
-    internalNotes: Joi.string().optional().allow('', null),
-    restaurantId: Joi.string().optional().allow('', null),
-    createdBy: Joi.string().optional().allow('', null),
-  }),
+    role: Joi.string().valid('Owner', 'Admin', 'Manager', 'Cashier', 'Waiter', 'Delivery', 'Kitchen', 'Bar').required(),
 
+
+    profilePicture: Joi.string().optional().allow('', null),
+    dateOfJoining: Joi.date().optional(),
+    gender: Joi.string().valid('Male', 'Female', 'Other').optional(),
+    branch: Joi.string().optional(),
+    supervisor: Joi.string().required(),
+    shiftStart: Joi.string().optional(),
+    shiftEnd: Joi.string().optional(),
+    autoAddToAttendance: Joi.boolean().optional(),
+    baseSalary: Joi.number().min(0).required(),
+    paymentMode: Joi.string().optional(),
+    tipCommissionEligible: Joi.boolean().optional(),
+    bankName: Joi.string().optional(),
+
+    ifscCode: Joi.string().optional(),
+    accountNumber: Joi.string().optional(),
+    internalNotes: Joi.string().optional(),
+    restaurantId: Joi.string().optional(),
+    createdBy: Joi.string().optional(),
+  }),
+  //
   staffUpdate: Joi.object({
     fullName: Joi.string().min(2).max(50).optional(),
     email: Joi.string().email().optional().allow(''),
@@ -223,35 +225,20 @@ export const schemas = {
       )
       .required()
   }),
-  // new for w
-  // Restaurant validation schemas
-  // restaurant: Joi.object({
-  //   name: Joi.string().min(2).max(100).required(),
-  //   description: Joi.string().max(500).optional(),
-  //   email: Joi.string().email().required(),
-  //   phone: Joi.string().max(15).optional(),
-  //   website: Joi.string().uri().optional(),
-  //   address: Joi.object({
-  //     street: Joi.string().max(200).optional(),
-  //     city: Joi.string().max(100).optional(),
-  //     state: Joi.string().max(100).optional(),
-  //     zipCode: Joi.string().max(20).optional(),
-  //     country: Joi.string().max(100).optional()
-  //   }).optional(),
- // Restaurant validation schemas
- restaurant: Joi.object({
-  name: Joi.string().min(2).max(100).required(),
-  description: Joi.string().max(500).optional(),
+
+  restaurant: Joi.object({
+    name: Joi.string().min(2).max(100).required(),
+    description: Joi.string().max(500).optional(),
     email: Joi.string().email().required(),
-  phone: Joi.string().max(15).optional(),
+    phone: Joi.string().max(15).optional(),
     website: Joi.string().uri().optional(),
- address: Joi.object({
-    street: Joi.string().max(500).optional(),
-    city: Joi.string().max(100).optional(),
-    state: Joi.string().max(100).optional(),
-    zipCode: Joi.string().max(20).optional(),
-    country: Joi.string().max(500).optional(),
- }).optional(),
+    address: Joi.object({
+      street: Joi.string().max(500).optional(),
+      city: Joi.string().max(100).optional(),
+      state: Joi.string().max(100).optional(),
+      zipCode: Joi.string().max(20).optional(),
+      country: Joi.string().max(500).optional(),
+    }).optional(),
     licenseKey: Joi.string().uppercase().optional(),
     currency: Joi.string().valid('INR', 'USD', 'EUR', 'GBP').optional(),
     timezone: Joi.string().optional(),
@@ -259,7 +246,7 @@ export const schemas = {
     maxTables: Joi.number().min(1).optional(),
     maxStaff: Joi.number().min(1).optional()
   }),
-
+  //new
   updateRestaurant: Joi.object({
     name: Joi.string().min(2).max(100).optional(),
     description: Joi.string().max(500).optional(),
@@ -283,11 +270,11 @@ export const schemas = {
 
 }  // end
 //new validtore function
-export const validateLogin = validate(schemas.login)
-export const validateStaffRegistration = validate(schemas.staffRegistration)
-export const validateStaffUpdate = validate(schemas.staffUpdate)
-export const validatePasswordChange = validate(schemas.passwordChange)
+exports.validate = validate;
+exports.schemas = schemas;
 
+exports.validateLogin = validate(schemas.login)
+exports.validateStaffRegistration = validate(schemas.staffRegistration)
+exports.validateStaffUpdate = validate(schemas.staffUpdate)
+exports.validatePasswordChange = validate(schemas.passwordChange)
 
-export default validate;
-//module.exports={validate,schemas}

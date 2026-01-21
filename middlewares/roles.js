@@ -102,13 +102,13 @@ PERMISSIONS[ROLES.RESTAURANT] = PERMISSIONS[ROLES.OWNER];
 
 
 // Helper function to check if a user has a specific action permission
-export const hasPermission = (userRole, permission) => {
+exports. hasPermission = (userRole, permission) => {
   const rolePermissions = PERMISSIONS[userRole]
   if (!rolePermissions) return false
   return rolePermissions[permission] === true;
 }
 
-export const canUpdateOrderStatus = (userRole, newStatus) => {
+exports. canUpdateOrderStatus = (userRole, newStatus) => {
   const rolePermissions = PERMISSIONS[userRole]
   if (!rolePermissions || !rolePermissions.canUpdateOrderStatus) return false;
   if (rolePermissions.canUpdateOrderStatus === true) return true;
@@ -117,9 +117,9 @@ export const canUpdateOrderStatus = (userRole, newStatus) => {
 };
 
 // Middleware to check if staff member is active
-export const requireActiveStaff = async (req, res, next) => {
+exports. requireActiveStaff = async (req, res, next) => {
   try {
-    const Staff = (await import('../models/staff.js')).default;
+    const { default: Staff } = await import("../models/staff.js");
     const staffMember = await Staff.findById(req.user.userId);
 
     if (!staffMember) {
@@ -145,7 +145,7 @@ export const requireActiveStaff = async (req, res, next) => {
 };
 
 // Middleware for role-based action validation
-export const validateRoleAction = (action, resource) => {
+exports. validateRoleAction = (action, resource) => {
   return (req, res, next) => {
     const userRole = req.user.role;
     const rolePermissions = PERMISSIONS[userRole];
@@ -170,7 +170,7 @@ export const validateRoleAction = (action, resource) => {
   };
 };
 
-export const requireRoles = (...allowedRoles) => {
+exports. requireRoles = (...allowedRoles) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
@@ -193,7 +193,7 @@ export const requireRoles = (...allowedRoles) => {
   };
 };
 
-export const requireMinRole = (minRole) => {
+exports. requireMinRole = (minRole) => {
   return (req, res, next) => {
     if (!req.user) {
       return res.status(401).json({
@@ -216,7 +216,7 @@ export const requireMinRole = (minRole) => {
   };
 };
 
-export { ROLES };
-export default requireRoles;
-//module.exports= ROLES
-//module.exports={requireRoles,requireMinRole}
+// export { ROLES };
+// export default requireRoles;
+
+exports.ROLES = ROLES;

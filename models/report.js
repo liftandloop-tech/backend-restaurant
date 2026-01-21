@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const reportSchema = new mongoose.Schema({
     // Schema to collect generated scheduled reports and manual snapshots
@@ -58,4 +58,4 @@ const reportSchema = new mongoose.Schema({
 
 reportSchema.index({ restaurantId: 1, reportType: 1, createdAt: -1 });
 
-export default mongoose.model("Report", reportSchema);
+module.exports = mongoose.model("Report", reportSchema);

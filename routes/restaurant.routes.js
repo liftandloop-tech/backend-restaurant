@@ -1,16 +1,9 @@
 // all new for w
-import express from "express";
-import * as restaurantController from "../controllers/restaurantController.js";
-import { authMiddleware } from "../middlewares/auth.js";
-import { requireRoles } from "../middlewares/roles.js";
-import { validate, schemas } from "../middlewares/validation.js";
-
-// const express = require('express');
-// const restaurantController = require('../controllers/restaurantController');
-// const { authMiddleware } = require('../middlewares/auth');
-// const { requireRoles } = require('../middlewares/roles');
-// const { validate, schemas } = require('../middlewares/validation');
-
+const express = require("express");
+const restaurantController = require("../controllers/restaurantController.js");
+const { authMiddleware } = require("../middlewares/auth.js");
+const { requireRoles } = require("../middlewares/roles.js");
+const { validate, schemas } = require("../middlewares/validation.js");
 const router = express.Router();
 
 // All routes require authentication
@@ -50,5 +43,4 @@ router.put("/license/:id", restaurantController.updateRestaurantLicense);
 // Add bill amount to restaurant account - Called automatically when bill is paid
 router.post("/add-bill-amount", restaurantController.addBillToRestaurantAccount);
 
-export default router;
-// module.exports = router;
+module.exports = router;

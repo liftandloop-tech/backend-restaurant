@@ -1,13 +1,8 @@
-import Table from "../models/table.js";
-import { AppError } from "../utils/errorHandler.js";
-import Order from "../models/order.js"
+const Order = require("../models/order.js");
+const Table = require("../models/table.js");
+const { AppError } = require("../utils/errorHandler.js");
 
-
-// const Table = require('../models/table.js')
-// const {AppError} = require('../utils/errorHandler.js')
-// const Order = require('../models/order.js')
-
-export const getTables = async (filters = {}) => {
+exports.getTables = async (filters = {}) => {
   const query = {};
   if (filters.status) query.status = filters.status;
   if (filters.location) query.location = filters.location;
@@ -21,7 +16,7 @@ export const getTables = async (filters = {}) => {
   }).sort({ tableNumber: 1 });
 };
 
-export const getTableById = async (id, restaurantId) => {
+exports.getTableById = async (id, restaurantId) => {
   const table = await Table.findById(id).populate('currentOrderId');
   if (!table) {
     throw new AppError("Table not found", 404);
@@ -34,67 +29,63 @@ export const getTableById = async (id, restaurantId) => {
   return table;
 };
 
-export const createTable = async (data) => {
-  //new for w
-  // Check if table with same number already exists in this restaurant
+exports.createTable = async (data) => {
+ 
+  //Check if table with same number already exists in the restaurant 
   const existingTable = await Table.findOne({
     tableNumber: data.tableNumber,
     restaurantId: data.restaurantId
   });
-
-  if (existingTable) {
-    throw new AppError(`Table number ${data.tableNumber} already exists in this restaurant`, 409);
+  if (existingTable){
+    throw new AppError(`Table number ${data.tableNumber}already exists in this restaurant`,409);
   }
 
-  const table = await Table.create(data);
+// Update restaurant statistics 
+try{
+  const { default: restaurantService } = await import("../services/restaurantService.js")
+  await restaurantService.incrementRestaurantStat(data.restaurantId,'totalTables');
 
-  // Update restaurant statistics
-  try {
-    const restaurantService = await import('../services/restaurantService.js');
-    await restaurantService.incrementRestaurantStat(data.restaurantId, 'totalTables');
-  } catch (error) {
-    console.error('Error updating restaurant stats after table creation:', error);
-  }
+} catch (error) {
+  console.error('Error updating restaurant stats after table creation:',error);
+}
+ return table;
+}
 
-  return table;
-};
-
-export const updateTable = async (id, data, restaurantId) => {
-  // First check if table exists and belongs to user's restaurant
-  const existingTable = await Table.findById(id);
-  if (!existingTable) {
-    throw new AppError("Table not found", 404);
-  }
+  exports.updateTable= async(id,data ,restaurantId) =>{
+    //First check if table exists and belongs to user's restaurant
+    const existingTable = await Table.findById(id);
+    if (!existingTable){
+      throw new AppError("Table not found", 404);
+    };
 
   // Ensure the table belongs to the user's restaurant
   if (existingTable.restaurantId.toString() !== restaurantId.toString()) {
-    throw new AppError("You can only update tables from your restaurant", 403);
+    throw new AppError("You can only update tables from your restaurant",403);
   }
 
-  const table = await Table.findByIdAndUpdate(id, data, { new: true, runValidators: true });
+const table = await Table.findByIdAndUpdate(id, data, { new: true, runValidators:true })
   return table;
 };
 
-export const updateTableStatus = async (id, status, restaurantId) => {
-  // First check if table exists and belongs to user's restaurant
-  const existingTable = await Table.findById(id);
-  if (!existingTable) {
-    throw new AppError("Table not found", 404);
-  }
+exports.updateTableStatus = async (id, data, restaurantId) => {
+      //First check if table exists and belongs to user's restaurant
+    const existingTable = await Table.findById(id);
+    if (!existingTable){
+      throw new AppError("Table not found", 404);
+    };
 
-  // Ensure the table belongs to the user's restaurant
-  if (existingTable.restaurantId.toString() !== restaurantId.toString()) {
-    throw new AppError("You can only update tables from your restaurant", 403);
-  }
-
-  const table = await Table.findByIdAndUpdate(
-    id,
-    { status },
-    { new: true, runValidators: true }
-  );
-  return table;
+  //Ensure the table belongs to the user's restaurant
+  if(existingTable.restaurantId.toString() !== restaurantId.toString()) {
+  throw new AppError("You can only update tables from your restaurant",403);
+}
+  
+const table = await Table.findByIdAndUpdate(
+  id, {status},
+   {new: true, runValidators: true})
+return table;
 };
-export const transferTable = async (tableNumber, restaurantId) => {
+//new
+exports.transferTable = async (tableNumber, restaurantId) => {
   const table = await Table.findOneAndUpdate(
     { tableNumber, restaurantId },
     { status: 'available' },
@@ -105,7 +96,7 @@ export const transferTable = async (tableNumber, restaurantId) => {
   }
   return table;
 };
-export const completeCleaning = async (tableNumber, restaurantId) => {
+exports.completeCleaning = async (tableNumber, restaurantId) => {
   const table = await Table.findOneAndUpdate(
     { tableNumber, restaurantId, status: 'cleaning' },
     { status: 'available' },
@@ -116,7 +107,7 @@ export const completeCleaning = async (tableNumber, restaurantId) => {
   }
   return table;
 }
-export const deleteTable = async (id, restaurantId) => {
+exports.deleteTable = async (id, restaurantId) => {
   const table = await Table.findById(id);
 
   if (!table) {
@@ -144,7 +135,7 @@ export const deleteTable = async (id, restaurantId) => {
 
   // Update restaurant statistics
   try {
-    const restaurantService = await import('../services/restaurantService.js');
+    const { default: restaurantService } = await import("../services/restaurantService.js");
     await restaurantService.decrementRestaurantStat(restaurantId, 'totalTables');
   } catch (error) {
     console.error('Error updating restaurant stats after table deletion:', error);

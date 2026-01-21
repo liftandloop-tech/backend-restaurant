@@ -1,7 +1,7 @@
 // new
-import mongoose from "mongoose";
+const mongoose =require ("mongoose");
 
-// const mongoose=require('mongoose')
+// import mongoose from "mongoose";
 
 const scheduledReportSchema = new mongoose.Schema({
     userId: {
@@ -62,6 +62,4 @@ const scheduledReportSchema = new mongoose.Schema({
 // Index for efficient querying
 scheduledReportSchema.index({ userId: 1, isActive: 1 });
 scheduledReportSchema.index({ nextRun: 1, isActive: 1 });
-
-export default mongoose.model("ScheduledReport", scheduledReportSchema);
-//module.exports=mongoose.model('ScheduleReport,sheduleReportSchema')
+module.exports = mongoose.model("ScheduledReport", scheduledReportSchema);

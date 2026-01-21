@@ -1,6 +1,5 @@
 //new
-import nodemailer from 'nodemailer';
-import { ENV } from '../config/env.js';
+const nodemailer = require("nodemailer");
 
 const sendEmail = async (options) => {
     // Create a transporter
@@ -38,5 +37,5 @@ const sendEmail = async (options) => {
     await transporter.sendMail(mailOptions);
 };
 
-export default sendEmail;
+module.exports = sendEmail;
 //end

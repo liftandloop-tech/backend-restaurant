@@ -1,14 +1,13 @@
-import Staff from '../models/staff.js'
-import { AppError } from '../utils/errorHandler.js'
-import jwt from 'jsonwebtoken'
-import { ENV } from '../config/env.js'
-import { addToBlacklist } from '../middlewares/auth.js'
+const Staff = require("../models/staff.js");
+const { AppError } = require("../utils/errorHandler.js");
+const jwt = require("jsonwebtoken");
+const { ENV } = require("../config/env.js");
 /**
  * register a new staff member
  * @param {object} staffData - staff registration data
  * @returns {object} created staff data
  */
-export const registerStaff = async (staffData) => {
+exports.registerStaff = async (staffData) => {
     const {
         // new for w
         fullName, phoneNumber, email, username, password, role, restaurantId, profilePicture, dateOfJoining, gender, branch, supervisor, shiftStart, shiftEnd, autoAddToAttendance, baseSalary, paymentMode, tipCommissionEligible, bankName, ifscCode, accountNumber, internalNotes, createdBy
@@ -21,7 +20,7 @@ export const registerStaff = async (staffData) => {
     }
 
     // Validate that the restaurant exists and user has access
-    const Restaurant = (await import('../models/restaurant.js')).default;
+    const { default: Restaurant } = await import("../models/restaurant.js");
     const restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
         throw new AppError('Restaurant not found', 404);
@@ -29,7 +28,7 @@ export const registerStaff = async (staffData) => {
 
     // Check if the creator has permission (must be owner, admin, or manager of the restaurant)
     if (createdBy) {
-        const User = (await import('../models/user.js')).default;
+        const { default: User } = await import("../models/user.js");
         const creator = await User.findById(createdBy);
 
         if (!creator) {
@@ -98,7 +97,7 @@ export const registerStaff = async (staffData) => {
         // new for w
         // Update restaurant statistics
         try {
-            const restaurantService = await import('../services/restaurantService.js');
+            const { default: restaurantService } = await import("../services/restaurantService.js");
             await restaurantService.incrementRestaurantStat(restaurantId, 'totalStaff');
         } catch (error) {
             console.error('Error updating restaurant stats after staff creation:', error);
@@ -121,7 +120,7 @@ export const registerStaff = async (staffData) => {
  * @param {string} password -password
  * @param {object} Login response with staff data and tokens
  */
-export const loginStaff = async (identifier, password) => {
+exports.loginStaff = async (identifier, password) => {
     //find staff by email or usrename
     const staff = await Staff.findOne({ $or: [{ email: identifier }, { username: identifier }] })
         .select('+password');
@@ -182,7 +181,7 @@ export const loginStaff = async (identifier, password) => {
  * @param {object} options - query options
  * @returns {object} paginated staff data
  */
-export const getAllStaff = async (options = {}) => {
+exports.getAllStaff = async (options = {}) => {
     const {
         page = 1,
         limit = 10,
@@ -254,7 +253,7 @@ export const getAllStaff = async (options = {}) => {
  * @param {string} staffId - staff id
  * @returns {object} staff data
  */
-export const getStaffById = async (staffId) => {
+exports.getStaffById = async (staffId) => {
     const staff = await Staff.findById(staffId)
         .populate('supervisor', 'fullName staffId')
         .populate('createdBy', 'fullName staffId')
@@ -273,7 +272,7 @@ export const getStaffById = async (staffId) => {
  * @param {string} updatedBy - updated by
  * @returns {object} updated staff data
  */
-export const updateStaff = async (staffId, updateData, updatedBy) => {
+exports.updateStaff = async (staffId, updateData, updatedBy) => {
     const {
         fullName, phoneNumber, email, username, role, profilePicture, dateOfJoining, gender, isActive, branch, supervisor, shiftStart, shiftEnd, autoAddToAttendance, baseSalary, paymentMode, tipCommissionEligible, bankName, ifscCode, accountNumber, internalNotes
     } = updateData;
@@ -327,7 +326,7 @@ export const updateStaff = async (staffId, updateData, updatedBy) => {
  * @param {string} dateleBy - ID of user performing the deletion
  * @returns{object} Deletion confirmation
  */
-export const deleteStaff = async (staffId, deletedBy) => {
+exports.deleteStaff = async (staffId, deletedBy) => {
     const staff = await Staff.findById(staffId)
     if (!staff) {
         throw new AppError('staff member not found', 404)
@@ -340,7 +339,7 @@ export const deleteStaff = async (staffId, deletedBy) => {
     // new for w
     // Decrement restaurant totalStaff stats
     try {
-        const restaurantService = await import('../services/restaurantService.js');
+        const { default: restaurantService } = await import("../services/restaurantService.js");
         await restaurantService.decrementRestaurantStat(staff.restaurantId, 'totalStaff');
     } catch (error) {
         console.error('Error updating restaurant stats after staff deletion:', error);
@@ -357,7 +356,7 @@ export const deleteStaff = async (staffId, deletedBy) => {
  * @param {string} staffId - staff id
  * @returns {object} deletion confirmation
  */
-export const permanentlyDeleteStaff = async (staffId) => {
+exports.permanentlyDeleteStaff = async (staffId) => {
     const staff = await Staff.findById(staffId);
     if (!staff) {
         throw new AppError('staff member not found', 404)
@@ -370,7 +369,7 @@ export const permanentlyDeleteStaff = async (staffId) => {
     // Decrement restaurant totalStaff stats
     if (staff.isActive) {
         try {
-            const restaurantService = await import('../services/restaurantService.js');
+            const { default: restaurantService } = await import("../services/restaurantService.js");
             await restaurantService.decrementRestaurantStat(restaurantId, 'totalStaff');
         } catch (error) {
             console.error('Error updating restaurant stats after staff permanent deletion:', error);
@@ -390,7 +389,7 @@ export const permanentlyDeleteStaff = async (staffId) => {
  * @param {string} newPassword - new password
  * @returns {object} staff data
  */
-export const changePassword = async (staffId, currentPassword, newPassword) => {
+exports.changePassword = async (staffId, currentPassword, newPassword) => {
     const staff = await Staff.findById(staffId).select('+password');
     if (!staff) {
         throw new AppError('staff member not found', 404)
@@ -415,7 +414,7 @@ export const changePassword = async (staffId, currentPassword, newPassword) => {
  * @param {string} resetBy - reset by
  * @returns {object} staff data
  */
-export const resetPassword = async (staffId, newPassword, resetBy) => {
+exports.resetPassword = async (staffId, newPassword, resetBy) => {
     const staff = await Staff.findById(staffId);
     if (!staff) {
         throw new AppError('staff member not found', 404)
@@ -434,7 +433,7 @@ export const resetPassword = async (staffId, newPassword, resetBy) => {
  * @param {object} restaurantId - Optional restaurant ID
  * @returns {object} staff statistics
  */
-export const getStaffStats = async (restaurantId) => {
+exports.getStaffStats = async (restaurantId) => {
     const matchStage = {};
     if (restaurantId) {
         matchStage.restaurantId = restaurantId;
@@ -448,11 +447,11 @@ export const getStaffStats = async (restaurantId) => {
                 total: { $sum: 1 },
                 active: { $sum: { $cond: ['$isActive', 1, 0] } },
                 inactive: { $sum: { $cond: ['$isActive', 0, 1] } },
+                totalPayroll: { $sum: { $cond: ['$isActive', '$baseSalary', 0] } },
                 byRole: {
                     $push: {
                         role: '$role',
                         isActive: '$isActive'
-
                     }
                 }
             }
@@ -468,12 +467,17 @@ export const getStaffStats = async (restaurantId) => {
             }
         }
     ]);
-
+//new
     if (stats.length === 0) {
         return {
             total: 0,
+            totalStaff: 0,
             active: 0,
+            activeStaff: 0,
             inactive: 0,
+            onDuty: 0,
+            absent: 0,
+            totalPayroll: 0,
             roles: {}
         };
     }
@@ -486,11 +490,16 @@ export const getStaffStats = async (restaurantId) => {
             inactive: role.count - role.active
         }
     });
-
+//new
     return {
         total: result.total,
+        totalStaff: result.total,
         active: result.active,
+        activeStaff: result.active,
         inactive: result.inactive,
+        onDuty: result.active, // Proxy for On Duty until attendance module is linked
+        absent: 0, // Placeholder for absent count (requires attendance data)
+        totalPayroll: result.totalPayroll || 0,
         roles
     }
 };
@@ -499,7 +508,7 @@ export const getStaffStats = async (restaurantId) => {
  * @param {string} role - staff role to filter by
  * @param {string} restaurantId - restaurant ID
  */
-export const getActiveStaffByRole = async (role, restaurantId) => {
+exports.getActiveStaffByRole = async (role, restaurantId) => {
     try {
         const query = {
             role: role,
@@ -524,7 +533,7 @@ export const getActiveStaffByRole = async (role, restaurantId) => {
  *@param {string} requireRole - required role for the action
  *@return {object} staff data  if valid
 */
-export const validateActiveStaffRole = async (staffId, requiredRole) => {
+exports.validateActiveStaffRole = async (staffId, requiredRole) => {
     try {
         const staff = await Staff.findById(staffId);
         if (!staff) {
@@ -545,4 +554,4 @@ export const validateActiveStaffRole = async (staffId, requiredRole) => {
         }
         throw new AppError('Failed to validate staff role', 500)
     }
-}
+}//end

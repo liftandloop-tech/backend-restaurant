@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import { connectDB } from "../config/db.js";
+const mongoose =require("mongoose");
+const { connectDB       } =require ("../config/db.js");
 
 const fixIndexes = async () => {
     console.log("Starting index fix script...");

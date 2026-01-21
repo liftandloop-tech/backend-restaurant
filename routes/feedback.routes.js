@@ -1,7 +1,7 @@
 //new
-import express from 'express';
-import * as feedbackController from '../controllers/feedbackController.js';
-import { authMiddleware } from '../middlewares/auth.js';
+const express = require("express");
+const feedbackController = require("../controllers/feedbackController.js");
+const { authMiddleware } = require("../middlewares/auth.js");
 
 const router = express.Router();
 
@@ -11,4 +11,4 @@ router.post('/submit', feedbackController.submitfeedback);
 // Private route for admin to see feedbacks
 router.get('/all', authMiddleware, feedbackController.getFeedbacks);
 
-export default router;
+module.exports = router;

@@ -1,9 +1,9 @@
 
-import express from 'express';
-import { registerStaffController, getAllStaffController, getStaffByIdController, updateStaffController, deleteStaffController, permanentlyDeleteStaffController, changePasswordController, resetPasswordController, getStaffStatsController, getProfileController, updateProfileController, loginStaffController, getActiveStaffByRoleController, getCurrentUserController, getAllActiveStaffController } from '../controllers/staffController.js';
-import { authMiddleware } from '../middlewares/auth.js';
-import { validateStaffRegistration, validateStaffUpdate, validateLogin, validatePasswordChange } from '../middlewares/validation.js';
-import { requireRoles } from '../middlewares/roles.js'
+const express =require("express");
+const { registerStaffController, getAllStaffController, getStaffByIdController, updateStaffController, deleteStaffController, permanentlyDeleteStaffController, changePasswordController, resetPasswordController, getStaffStatsController, getProfileController, updateProfileController, loginStaffController, getActiveStaffByRoleController, getCurrentUserController, getAllActiveStaffController   }=require("../controllers/staffController.js");
+const { authMiddleware   } =require("../middlewares/auth.js");
+const { validateStaffRegistration, validateStaffUpdate, validateLogin, validatePasswordChange   } =require("../middlewares/validation.js");
+const { requireRoles   } =require("../middlewares/roles.js");
 
 
 const router = express.Router();
@@ -65,8 +65,8 @@ router.get('/me', getCurrentUserController);
 // Debug: Get all active staff and users (for troubleshooting)
 router.get('/debug/users', requireRoles(['Admin', 'Owner', 'Restaurant']), async (req, res) => {
   try {
-    const Staff = (await import('../models/staff.js')).default;
-    const User = (await import('../models/user.js')).default;
+    const { default: Staff } = await import("../models/staff.js");
+    const { default: User } = await import("../models/user.js");
 
     const activeStaff = await Staff.find({ isActive: true }).select('fullName email phoneNumber role _id');
     const allUsers = await User.find({}).select('name email role _id');
@@ -83,4 +83,4 @@ router.get('/debug/users', requireRoles(['Admin', 'Owner', 'Restaurant']), async
   }
 });
 
-export default router;
+module.exports = router;

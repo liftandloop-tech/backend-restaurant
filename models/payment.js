@@ -1,6 +1,5 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-// const mongoose=require('mongoose')
 const paymentSchema = new mongoose.Schema({
   paymentId: {
     type: String,
@@ -79,7 +78,7 @@ const paymentSchema = new mongoose.Schema({
 });
 
 // Generate payment ID before validation (so it's available during validation)
-paymentSchema.pre('validate', async function(next) {
+paymentSchema.pre('validate', async function (next) {
   if (!this.paymentId) {
     const count = await mongoose.model('Payment').countDocuments();
     this.paymentId = `PAY-${Date.now()}-${String(count + 1).padStart(4, '0')}`;
@@ -93,5 +92,5 @@ paymentSchema.index({ mode: 1, createdAt: -1 });
 paymentSchema.index({ status: 1, createdAt: -1 });
 paymentSchema.index({ gatewayTransactionId: 1 });
 
-export default mongoose.model("Payment", paymentSchema);
-//module.exports=mongoose.model('payment,paymentSchema')
+module.exports = mongoose.model("Payment", paymentSchema);
+

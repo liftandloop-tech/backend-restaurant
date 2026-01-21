@@ -1,6 +1,5 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-//const mongoose=require('require')
 
 const kotSchema = new mongoose.Schema({
   kotNumber: {
@@ -44,8 +43,7 @@ const kotSchema = new mongoose.Schema({
   status: {
     type: String,
     enum: ['pending', 'preparing', 'ready', 'sent', 'cancelled'],
-    default: 'pending',
-    index: true
+    default: 'pending'
   },
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
@@ -58,7 +56,7 @@ const kotSchema = new mongoose.Schema({
     type: Date
   },
 
-    isPrinted: {
+  isPrinted: {
     type: Boolean,
     default: false
   },
@@ -81,7 +79,7 @@ const kotSchema = new mongoose.Schema({
 
 // Generate KOT number before saving (fallback - should be set in service)
 // This is kept as a fallback for cases where kotNumber might not be set
- kotSchema.pre('save', async function(next) {
+kotSchema.pre('save', async function (next) {
   if (!this.kotNumber && this.station) {
     const count = await mongoose.model('KOT').countDocuments();
     const stationCode = this.station.substring(0, 3).toUpperCase();
@@ -95,5 +93,5 @@ kotSchema.index({ orderId: 1, station: 1 });
 kotSchema.index({ status: 1, station: 1 });
 kotSchema.index({ createdAt: -1 });
 
-export default mongoose.model("KOT", kotSchema);
-//module.exports=mongoose.model('KOT,kotSchema')
+// export default mongoose.model("KOT", kotSchema);
+module.exports = mongoose.model("KOT", kotSchema)

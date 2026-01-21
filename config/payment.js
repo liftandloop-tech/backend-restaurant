@@ -1,13 +1,9 @@
-import { ENV } from "./env.js";
-import crypto from "crypto";
-import { logger } from "../utils/logger.js";
-
-// const{ENV}=require('./env.js')
-// const crypto=require('crypto')
-// const{logger}=require('../utils/logger.js')
+const { ENV   } =require("./env.js");
+const crypto =require("crypto");
+const { logger       } =require("../utils/logger.js");
 
 // Payment gateway configuration
-export const paymentConfig = {
+exports. paymentConfig = {
   razorpay: {
     keyId: process.env.RAZORPAY_KEY_ID || '',
     keySecret: process.env.RAZORPAY_KEY_SECRET || '',
@@ -21,7 +17,7 @@ export const paymentConfig = {
 };
 
 // Verify webhook signature (HMAC)
-export const verifyWebhookSignature = (payload, signature, secret) => {
+exports. verifyWebhookSignature = (payload, signature, secret) => {
   if (!secret) {
     logger.warn('Webhook secret not configured');
     return false;
@@ -45,13 +41,13 @@ export const verifyWebhookSignature = (payload, signature, secret) => {
 };
 
 // Verify Razorpay webhook
-export const verifyRazorpayWebhook = (payload, razorpaySignature) => {
+exports. verifyRazorpayWebhook = (payload, razorpaySignature) => {
   const secret = paymentConfig.razorpay.webhookSecret;
   return verifyWebhookSignature(payload, razorpaySignature, secret);
 };
 
 // Verify Stripe webhook
-export const verifyStripeWebhook = (payload, stripeSignature) => {
+exports. verifyStripeWebhook = (payload, stripeSignature) => {
   const secret = paymentConfig.stripe.webhookSecret;
   
   try {
@@ -75,7 +71,7 @@ export const verifyStripeWebhook = (payload, stripeSignature) => {
 };
 
 // Generic payment verification
-export const verifyPayment = (gateway, payload, signature) => {
+exports. verifyPayment = (gateway, payload, signature) => {
   switch (gateway) {
     case 'razorpay':
       return verifyRazorpayWebhook(payload, signature);
@@ -86,5 +82,3 @@ export const verifyPayment = (gateway, payload, signature) => {
       return false;
   }
 };
-
-export default { paymentConfig, verifyPayment, verifyRazorpayWebhook, verifyStripeWebhook };

@@ -1,20 +1,20 @@
-import Order from "../models/order.js";
-import Bill from "../models/bill.js";
-import Customer from "../models/customer.js";
-import ScheduledReport from "../models/scheduledReport.js";
-import Report from "../models/report.js";
-import Inventory from "../models/inventory.js";
-import Menu from "../models/menu.js";
-import Staff from "../models/staff.js";
-import Vendor from "../models/vendor.js";
-import Offer from "../models/offer.js";
-import PurchaseOrder from "../models/purchaseOrder.js";
-import { AppError } from "../utils/errorHandler.js";
+const Order = require("../models/order.js");
+const Bill = require("../models/bill.js");
+const Customer = require("../models/customer.js");
+const ScheduledReport = require("../models/scheduledReport.js");
+const Report = require("../models/report.js");
+const Inventory = require("../models/inventory.js");
+const Menu = require("../models/menu.js");
+const Staff = require("../models/staff.js");
+const Vendor = require("../models/vendor.js");
+const Offer = require("../models/offer.js");
+const PurchaseOrder = require("../models/purchaseOrder.js");
+const { AppError } = require("../utils/errorHandler.js");
 
 /**
  * Generate report data based on filters
  */
-export const generateReportData = async (filters = {}) => {
+exports.generateReportData = async (filters = {}) => {
   const {
     reportType = 'all',
     dateRange = 'This Month',
@@ -646,7 +646,7 @@ export const generateReportData = async (filters = {}) => {
 /**
  * Create a scheduled report
  */
-export const createScheduledReport = async (userId, data) => {
+exports.createScheduledReport = async (userId, data) => {
   // Calculate next run time
   const nextRun = calculateNextRun(data.frequency, data.time);
 
@@ -662,14 +662,14 @@ export const createScheduledReport = async (userId, data) => {
 /**
  * Get all scheduled reports for a user
  */
-export const getScheduledReports = async (userId) => {
+exports.getScheduledReports = async (userId) => {
   return await ScheduledReport.find({ userId }).sort({ createdAt: -1 });
 };
 
 /**
  * Update a scheduled report
  */
-export const updateScheduledReport = async (reportId, userId, data) => {
+exports.updateScheduledReport = async (reportId, userId, data) => {
   const report = await ScheduledReport.findOne({ _id: reportId, userId });
 
   if (!report) {
@@ -690,7 +690,7 @@ export const updateScheduledReport = async (reportId, userId, data) => {
 /**
  * Delete a scheduled report
  */
-export const deleteScheduledReport = async (reportId, userId) => {
+exports.deleteScheduledReport = async (reportId, userId) => {
   const report = await ScheduledReport.findOneAndDelete({ _id: reportId, userId });
 
   if (!report) {
@@ -742,7 +742,7 @@ function calculateNextRun(frequency, time) {
 /**
  * Save a generated report snapshot to the database
  */
-export const saveReportSnapshot = async (reportData, userId) => {
+exports.saveReportSnapshot = async (reportData, userId) => {
   const report = new Report({
     restaurantId: reportData.restaurantId, // Ensure this is passed/resolved
     generatedBy: userId,
@@ -761,6 +761,6 @@ export const saveReportSnapshot = async (reportData, userId) => {
 /**
  * Get saved reports history
  */
-export const getSavedReports = async (filters = {}) => {
+exports.getSavedReports = async (filters = {}) => {
   return await Report.find(filters).sort({ createdAt: -1 });
 };

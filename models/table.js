@@ -1,5 +1,4 @@
-import mongoose from "mongoose";
-// const mongoose=require('mongoose')
+const mongoose =require("mongoose");
 
 const tableSchema = new mongoose.Schema({
   tableNumber: {
@@ -46,6 +45,4 @@ const tableSchema = new mongoose.Schema({
 
 tableSchema.index({ status: 1 });
 tableSchema.index({ restaurantId: 1, tableNumber: 1 }, { unique: true });
-
-export default mongoose.model("Table", tableSchema);
-//module.exports =mongoose.model('Table',tableSchema)
+module.exports= mongoose.model("Table", tableSchema);

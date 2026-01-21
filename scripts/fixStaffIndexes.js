@@ -1,6 +1,6 @@
-import mongoose from 'mongoose';
-import { ENV } from '../config/env.js';
-import Staff from '../models/staff.js';
+const mongoose = require("mongoose");
+const { ENV } = require("../config/env.js");
+const Staff = require("../models/staff.js");
 
 /**
  * Migration script to fix staff collection indexes and data

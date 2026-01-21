@@ -1,10 +1,7 @@
-import Offer from "../models/offer.js";
-import { AppError } from "../utils/errorHandler.js";
+const Offer = require("../models/offer.js");
+const { AppError } = require("../utils/errorHandler.js");
 
-// const Offer =require('models/offer.js')
-// const{AppError}=require('../utils/errorHandler.js')
-
-export const getOffers = async (filters = {}) => {
+exports.getOffers = async (filters = {}) => {
   const query = {};
   if (filters.isActive !== undefined) query.isActive = filters.isActive;
   if (filters.restaurantId) query.restaurantId = filters.restaurantId;
@@ -19,7 +16,7 @@ export const getOffers = async (filters = {}) => {
   return await Offer.find(query).populate('applicableItems applicableCategories').sort({ createdAt: -1 });
 };
 //new
-export const getOfferById = async (id, restaurantId) => {
+exports.getOfferById = async (id, restaurantId) => {
   const query = { _id: id };
   if (restaurantId) query.restaurantId = restaurantId;
 
@@ -30,11 +27,11 @@ export const getOfferById = async (id, restaurantId) => {
   return offer;
 };
 //end
-export const createOffer = async (data) => {
+exports.createOffer = async (data) => {
   return await Offer.create(data);
 };
 
-export const updateOffer = async (id, data, restaurantId) => {
+exports.updateOffer = async (id, data, restaurantId) => {
   const query = { _id: id };
   if (restaurantId) query.restaurantId = restaurantId;
 
@@ -46,7 +43,7 @@ export const updateOffer = async (id, data, restaurantId) => {
   return offer;
 };
 //new
-export const updateOfferStatus = async (id, isActive, restaurantId) => {
+exports.updateOfferStatus = async (id, isActive, restaurantId) => {
   const query = { _id: id };
   if (restaurantId) query.restaurantId = restaurantId;
 
@@ -57,7 +54,7 @@ export const updateOfferStatus = async (id, isActive, restaurantId) => {
   return offer;
 };
 
-export const deleteOffer = async (id, restaurantId) => {
+exports.deleteOffer = async (id, restaurantId) => {
   const query = { _id: id };
   if (restaurantId) query.restaurantId = restaurantId;
 

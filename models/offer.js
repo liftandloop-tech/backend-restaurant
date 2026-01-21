@@ -1,6 +1,5 @@
- import mongoose from "mongoose";
+const { mongoose } = require("mongoose");
 
-//const mongoose=require('mongoose')
 
 const offerSchema = new mongoose.Schema({
   name: {
@@ -65,9 +64,9 @@ const offerSchema = new mongoose.Schema({
   image: {
     type: String
   },
-  
+
   restaurantId: {
-    type : mongoose.Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Restaurant',
     required: true // offer must belong to a restaurant
   }
@@ -77,5 +76,4 @@ const offerSchema = new mongoose.Schema({
 
 offerSchema.index({ isActive: 1, validFrom: 1, validUntil: 1 });
 
-export default mongoose.model("Offer", offerSchema);
-//module.exports=mongoose.model('Offer,offerSchema')
+module.exports = mongoose.model("Offer", offerSchema);

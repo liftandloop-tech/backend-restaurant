@@ -22,18 +22,18 @@ function sanitizeObject(obj, path = '') {
 
   if (typeof obj === 'object' && obj.constructor === Object) {
     const sanitized = {};
-    
+
     for (const [key, value] of Object.entries(obj)) {
       // Check if key is a MongoDB operator
       if (MONGO_OPERATORS.includes(key)) {
         console.warn(`[Sanitize] Removed forbidden MongoDB operator from ${path || 'request'}: ${key}`);
         continue; // Skip this key
       }
-      
+
       // Recursively sanitize nested objects
       sanitized[key] = sanitizeObject(value, path ? `${path}.${key}` : key);
     }
-    
+
     return sanitized;
   }
 
@@ -42,12 +42,12 @@ function sanitizeObject(obj, path = '') {
 
 // Express 5 compatible sanitization middleware
 // Creates sanitized copies instead of mutating req properties
-export const sanitize = (req, res, next) => {
+exports.sanitize = (req, res, next) => {
   // Skip sanitization for OPTIONS requests (CORS preflight)
   if (req.method === 'OPTIONS') {
     return next();
   }
-  
+
   // Sanitize query parameters
   if (req.query && typeof req.query === 'object') {
     req.sanitizedQuery = sanitizeObject(req.query);
@@ -73,9 +73,9 @@ export const sanitize = (req, res, next) => {
 };
 
 // Additional string sanitization for print data
-export const sanitizeForPrint = (str) => {
+exports.sanitizeForPrint = (str) => {
   if (typeof str !== 'string') return '';
-  
+
   // Remove ESC/POS command sequences to prevent injection
   // ESC/POS commands start with ESC (0x1B) or GS (0x1D)
   return str
@@ -89,15 +89,15 @@ export const sanitizeForPrint = (str) => {
 };
 
 // Sanitize object recursively for printing
-export const  sanitizeObjectForPrint = (obj) => {
+exports.sanitizeObjectForPrint = (obj) => {
   if (typeof obj === 'string') {
     return sanitizeForPrint(obj);
   }
-  
+
   if (Array.isArray(obj)) {
     return obj.map(item => sanitizeObjectForPrint(item));
   }
-  
+
   if (obj && typeof obj === 'object') {
     const sanitized = {};
     for (const [key, value] of Object.entries(obj)) {
@@ -105,9 +105,7 @@ export const  sanitizeObjectForPrint = (obj) => {
     }
     return sanitized;
   }
-  
+
   return obj;
 };
 
-export default sanitize;
-//module.exports ={sanitize};

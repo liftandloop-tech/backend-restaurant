@@ -1,6 +1,5 @@
-import mongoose from "mongoose";
+const mongoose =require("mongoose");
 
-// const mongoose= require('mongoose')
 const reservationSchema = new mongoose.Schema({
   customerName: {
     type: String,
@@ -72,5 +71,4 @@ const reservationSchema = new mongoose.Schema({
 reservationSchema.index({ reservationDate: 1, status: 1 });
 reservationSchema.index({ customerPhone: 1 });
 
-export default mongoose.model("Reservation", reservationSchema);
-//module.exports=mongoose.model('Reservation',reservationSchema)
+module.exports = mongoose.model("Reservation", reservationSchema);

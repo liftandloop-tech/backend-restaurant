@@ -1,22 +1,13 @@
-import mongoose from "mongoose";
-import Bill from "../models/bill.js";
-import Payment from "../models/payment.js";
-import Order from "../models/order.js";
-import User from "../models/user.js";
-import { AppError } from "../utils/errorHandler.js";
-import { checkIdempotency, storeIdempotency } from "../utils/idempotency.js";
-import * as restaurantService from "./restaurantService.js";
+const mongoose = require("mongoose");
+const Bill = require("../models/bill.js");
+const Payment = require("../models/payment.js");
+const Order = require("../models/order.js");
+const User = require("../models/user.js");
+const { AppError } = require("../utils/errorHandler.js");
+const { checkIdempotency, storeIdempotency } = require("../utils/idempotency.js");
+const restaurantService = require("./restaurantService.js");
 
-
-// const mongoose = require('mongoose')
-// const Bill = require('../models/bill.js')
-// const {AppError} = require('../utils/errorHandler.js')
-// const payment = require('../models/payment.js')
-// const Order = require('../models/order.js')
-// const {checkIdempotency,storeIdempotency} = require('../utils/idempotency.js')
-
-
-export const createBill = async (orderId, cashierId, idempotencyKey, cashierRole) => {
+exports.createBill = async (orderId, cashierId, idempotencyKey, cashierRole) => {
   //const order = await Order.findById(orderId).populate('customerId', 'name phone email');
   const order = await Order.findById(orderId).populate('customerId', 'name email phone')
 
@@ -30,8 +21,8 @@ export const createBill = async (orderId, cashierId, idempotencyKey, cashierRole
 
   //new for w
   //Validate that only active cashier/manager can create bills
-  const Staff = (await import('../models/staff.js')).default
-  const User = (await import('../models/user.js')).default
+  const { default: Staff } = await import("../models/staff.js");
+  const { default: User } = await import("../models/user.js");
 
   let cashier = null;
   let user = null;
@@ -120,7 +111,7 @@ export const createBill = async (orderId, cashierId, idempotencyKey, cashierRole
   }
 };
 
-export const processPayment = async (billId, paymentData, cashierId, idempotencyKey) => {
+exports.processPayment = async (billId, paymentData, cashierId, idempotencyKey) => {
   // Check idempotency
   const cached = checkIdempotency(idempotencyKey);
   if (cached) {
@@ -217,7 +208,7 @@ export const processPayment = async (billId, paymentData, cashierId, idempotency
   }
 };
 
-export const getBills = async (filters = {}) => {
+exports.getBills = async (filters = {}) => {
   const query = {};
 
   if (filters.paid !== undefined) query.paid = filters.paid;
@@ -238,7 +229,7 @@ export const getBills = async (filters = {}) => {
     .lean();
 };
 
-export const getBillById = async (billId, restaurantId) => {
+exports.getBillById = async (billId, restaurantId) => {
   const bill = await Bill.findById(billId)
     .populate('orderId', 'orderNumber tableNumber items subtotal tax discount total')
     .populate('cashierId', 'name email');
@@ -255,7 +246,7 @@ export const getBillById = async (billId, restaurantId) => {
   return bill;
 };
 
-export const getBillsByCashier = async (cashierId, cashierRole, restaurantId) => {
+exports.getBillsByCashier = async (cashierId, cashierRole, restaurantId) => {
   // Validate permissions
   const allowedRoles = ['Cashier', 'Manager', 'Admin', 'Owner'];
   if (!allowedRoles.includes(cashierRole)) {
@@ -280,7 +271,7 @@ export const getBillsByCashier = async (cashierId, cashierRole, restaurantId) =>
     .lean();
 };
 
-export const processRefund = async (billId, refundAmount, reason, cashierId, restaurantId) => {
+exports.processRefund = async (billId, refundAmount, reason, cashierId, restaurantId) => {
   // const session = await mongoose.startSession();
   // session.startTransaction();
 

@@ -1,5 +1,5 @@
 //new
-import mongoose from 'mongoose';
+const mongoose = require("mongoose");
 
 const FeedbackSchema = new mongoose.Schema({
     customerName: {
@@ -29,4 +29,6 @@ const FeedbackSchema = new mongoose.Schema({
     }
 }, { timestamps: true });
 
-export default mongoose.model('Feedback', FeedbackSchema);
+// export default mongoose.model('Feedback', FeedbackSchema);
+
+module.exports = mongoose.model("Feedback", FeedbackSchema);

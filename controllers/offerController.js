@@ -1,13 +1,14 @@
 //total new
-import * as offerService from "../services/offerService.js";
-import { sendSuccess } from "../utils/response.js";
+// import * as offerService from "../services/offerService.js";
+const offerService = require("../services/offerService.js");
+const { sendSuccess   } =require ("../utils/response.js");
 
 // Helper to resolve restaurantId
 const resolveRestaurantId = async (userId) => {
   // Dynamic imports to avoid potential circular dependency issues
-  const User = (await import('../models/user.js')).default;
-  const Staff = (await import('../models/staff.js')).default;
-  const Restaurant = (await import('../models/restaurant.js')).default;
+  const { default: User } = await import("../models/user.js");
+  const { default: Staff } = await import("../models/staff.js");
+  const { default: Restaurant } = await import("../models/restaurant.js");
 
   let restaurantId = null;
   const user = await User.findById(userId);
@@ -32,7 +33,7 @@ const resolveRestaurantId = async (userId) => {
   return restaurantId;
 };
 
-export const getOffers = async (req, res, next) => {
+exports. getOffers = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId);
     const filters = {
@@ -51,7 +52,7 @@ export const getOffers = async (req, res, next) => {
   }
 };
 
-export const getOfferById = async (req, res, next) => {
+exports. getOfferById = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId);
     const offer = await offerService.getOfferById(req.params.id, restaurantId);
@@ -61,10 +62,10 @@ export const getOfferById = async (req, res, next) => {
   }
 };
 
-export const createOffer = async (req, res, next) => {
+exports. createOffer = async (req, res, next) => {
   try {
     // Ensure user has a restaurant
-    const restaurantService = (await import('../services/restaurantService.js'));
+    const restaurantService = (require("../services/restaurantService.js"));
     const restaurant = await restaurantService.ensureUserHasRestaurant(req.user.userId);
 
     const offerData = {
@@ -79,7 +80,7 @@ export const createOffer = async (req, res, next) => {
   }
 };
 
-export const updateOffer = async (req, res, next) => {
+exports. updateOffer = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId);
     const offer = await offerService.updateOffer(req.params.id, req.body, restaurantId);
@@ -89,7 +90,7 @@ export const updateOffer = async (req, res, next) => {
   }
 };
 
-export const updateOfferStatus = async (req, res, next) => {
+exports. updateOfferStatus = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId);
     const offer = await offerService.updateOfferStatus(req.params.id, req.body.isActive, restaurantId);
@@ -99,7 +100,7 @@ export const updateOfferStatus = async (req, res, next) => {
   }
 };
 
-export const deleteOffer = async (req, res, next) => {
+exports. deleteOffer = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId);
     await offerService.deleteOffer(req.params.id, restaurantId);

@@ -1,5 +1,4 @@
-import mongoose from "mongoose";
-//const mongoose=require('mongoose')
+const mongoose = require("mongoose");
 const inventoryItemSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -67,5 +66,6 @@ inventoryItemSchema.index({ name: 'text' });
 inventoryItemSchema.index({ currentStock: 1, minStockLevel: 1 });
 inventoryItemSchema.index({ restaurantId: 1, name: 1 }, { unique: true });
 
-export default mongoose.model("InventoryItem", inventoryItemSchema);
-//module.exports=mongoose.model('InventoryItme,inventorySchama')
+// export default mongoose.model("InventoryItem", inventoryItemSchema);
+
+module.exports = mongoose.model("InventoryItem", inventoryItemSchema);

@@ -1,17 +1,8 @@
-import express from "express";
-import * as userController from "../controllers/userController.js";
-import { authMiddleware } from "../middlewares/auth.js";
-import { requireRoles } from "../middlewares/roles.js";
-import { validate, schemas } from "../middlewares/validation.js";
-
-
-// const express = require('express')
-// const userController = require('../controllers/userController.js')
-
-// const {authMiddleware} = require('../middlewares/auth.js')
-// const {requireRoles} = require('../middlewares/roles.js')
-// const {validate, schemas}= require('../middlewares/validation.js')
-// const {authLimiter,generalLimiter} = require('../middlewares/rate-limit.js')
+const express = require("express");
+const userController = require("../controllers/userController.js");
+const { authMiddleware } = require("../middlewares/auth.js");
+const { requireRoles } = require("../middlewares/roles.js");
+const {validate ,schemas} =require("../middlewares/validation.js");
 
 const router = express.Router();
 
@@ -35,7 +26,7 @@ router.post("/user/logout"
   , authMiddleware, userController.logout);
 
 router.get("/user/get"
-  , authMiddleware,requireRoles('Owner', 'Admin', 'Manager',), userController.getAllUsers);
+  , authMiddleware, requireRoles('Owner', 'Admin', 'Manager'), userController.getAllUsers);
 
 router.get("/get/user/by/:id"
   , authMiddleware,
@@ -57,5 +48,4 @@ router.patch("/user/change-password",
   authMiddleware, validate(schemas.passwordChange), userController.changePassword
 );
 
-export default router;
-//module.exports= router;
+module.exports = router;

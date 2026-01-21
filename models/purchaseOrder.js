@@ -1,4 +1,4 @@
-import mongoose from "mongoose";//new
+const mongoose = require("mongoose");//new
 
 const purchaseOrderItemSchema = new mongoose.Schema({
     inventoryItemId: {
@@ -60,4 +60,4 @@ const purchaseOrderSchema = new mongoose.Schema({
 
 purchaseOrderSchema.index({ restaurantId: 1, poNumber: 1 }, { unique: true });
 
-export default mongoose.model("PurchaseOrder", purchaseOrderSchema);
+module.exports = mongoose.model("PurchaseOrder", purchaseOrderSchema);

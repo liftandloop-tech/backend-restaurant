@@ -1,21 +1,9 @@
-//total new
-
-import express from "express";
-import * as reportController from "../controllers/reportController.js";
-import { authMiddleware } from "../middlewares/auth.js";
-import { requireRoles } from "../middlewares/roles.js";
-
-
-import { validate, schemas } from "../middlewares/validation.js";
-
-
-// const express = require('express')
-// const reportController = require('../controllers/reportController.js')
-// const{authMiddleware} = require('../middlewares/auth.js')
-// const {requireRoles} = require('../middlewares/roles.js')
-// const {generalLimiter} = require('../middlewares/rate-limit.js')
-// const {validate,schemas} = require('../middlewares/validation.js')
-
+const express = require("express");
+const reportController = require("../controllers/reportController.js");
+const { authMiddleware } = require("../middlewares/auth.js");
+const { requireRoles } = require("../middlewares/roles.js");
+const { validate, schemas } = require("../middlewares/validation.js")
+// totalnew
 const router = express.Router();
 
 // All routes require authentication
@@ -61,7 +49,5 @@ router.get("/menu", requireRoles('Owner', 'Admin'), reportHandler('menu'));
 router.get("/vendor", requireRoles('Owner', 'Admin'), reportHandler('vendor'));
 router.get("/purchase", requireRoles('Owner', 'Admin'), reportHandler('purchase'));
 router.get("/offer", requireRoles('Owner', 'Admin'), reportHandler('offer'));
-
-export default router;
-//module.exports=router;
+module.exports = router;
 // end

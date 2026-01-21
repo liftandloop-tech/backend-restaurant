@@ -1,16 +1,8 @@
-import mongoose from "mongoose";
-import Order from "../models/order.js";
-import { AppError } from "../utils/errorHandler.js";
-import Table from "../models/table.js";
-import { validateActiveStaffRole } from "./staffService.js";
+const Order = require("../models/order.js");
+const Table = require("../models/table.js");
+const { AppError } = require("../utils/errorHandler.js");
 
-
-// const mongoose = require('mongoose')
-// const Order= require('../models/order.js')
-// const {AppError} = require('../utils/errorHandler')
-// const Table = require('../models/table.js')
-
-export const createOrder = async (orderData, userId, userRole) => {
+exports.createOrder = async (orderData, userId, userRole) => {
   {/*const{ tableNumber, items, notes, discount,source,customerId}= orderData;*/ }
 
   const { tableNumber, items, notes, discount, source, customerId, status } = orderData;
@@ -22,10 +14,10 @@ export const createOrder = async (orderData, userId, userRole) => {
 
 
   // validate that active staff can create ordres
-  const Staff = (await import('../models/staff.js')).default;
+  const { default: Staff } = await import("../models/staff.js");
 
 
-  const User = (await import('../models/user.js')).default;
+  const { default: User } = await import("../models/user.js");
 
   let staffMember = null;
   let userMember = null;
@@ -105,7 +97,7 @@ export const createOrder = async (orderData, userId, userRole) => {
     console.log('No restaurantId found, attempting to ensure user has restaurant', { userId, userRole });
 
     try {
-      const restaurantService = await import('../services/restaurantService.js');
+      const { default: restaurantService } = await import("../services/restaurantService.js");
       const restaurant = await restaurantService.ensureUserHasRestaurant(userId);
 
       if (restaurant && restaurant._id) {
@@ -168,7 +160,7 @@ export const createOrder = async (orderData, userId, userRole) => {
   // new for w
   // Update restaurant statistics
   try {
-    const restaurantService = await import('../services/restaurantService.js');
+    const { default: restaurantService } = await import("../services/restaurantService.js");
     await restaurantService.incrementRestaurantStat(restaurantId, 'totalOrders');
 
     // Update average order value
@@ -196,23 +188,23 @@ export const createOrder = async (orderData, userId, userRole) => {
     }
   }   //end
   //end
-//new
+  //new
 
   // Deduct inventory stock immediately upon creation
   try {
-    const inventoryService = await import('../services/inventoryService.js');
+    const { default: inventoryService } = await import("../services/inventoryService.js");
     await inventoryService.deductStockForOrder(order._id);
   } catch (invError) {
     console.error('Failed to deduct inventory for new order:', invError);
     // Continue without failing the order
   }
-//end
+  //end
   return await Order.findById(order._id)
     .populate('waiterId', 'fullName email role')
     .populate('customerId', 'name phone email')
 };
 // export const getOrders = async (filters = {}, userId, userRole) => {
-export const getOrders = async (filters = {}, userId, userRole) => {
+exports.getOrders = async (filters = {}, userId, userRole) => {
   const query = {};
 
   if (filters.status) query.status = filters.status;
@@ -242,7 +234,7 @@ export const getOrders = async (filters = {}, userId, userRole) => {
     .lean();
 };
 
-export const getOrderById = async (orderId, restaurantId) => {
+exports.getOrderById = async (orderId, restaurantId) => {
   const query = { _id: orderId };
   if (restaurantId) query.restaurantId = restaurantId;
 
@@ -256,7 +248,7 @@ export const getOrderById = async (orderId, restaurantId) => {
   return order;
 };
 
-export const updateOrder = async (orderId, updateData, userId, restaurantId) => {
+exports.updateOrder = async (orderId, updateData, userId, restaurantId) => {
   const query = { _id: orderId };
   if (restaurantId) query.restaurantId = restaurantId;
 
@@ -282,7 +274,7 @@ export const updateOrder = async (orderId, updateData, userId, restaurantId) => 
 };
 
 // export const updateOrderStatus = async (orderId, status, userId, userRole) => {
-export const updateOrderStatus = async (orderId, status, userId, userRole, restaurantId) => {
+exports.updateOrderStatus = async (orderId, status, userId, userRole, restaurantId) => {
   const query = { _id: orderId };
   if (restaurantId) query.restaurantId = restaurantId;
 
@@ -347,10 +339,10 @@ export const updateOrderStatus = async (orderId, status, userId, userRole, resta
   return await Order.findById(order._id).populate("waiterId", "fullName email role")
 }
 
-export const confirmOrder = async (orderId, userId, userRole, restaurantId) => {
+exports.confirmOrder = async (orderId, userId, userRole, restaurantId) => {
   // validate that only active staff can confirm orders
-  const Staff = (await import('../models/staff.js')).default;
-  const User = (await import('../models/user.js')).default;
+  const { default: Staff } = await import("../models/staff.js");
+  const { default: User } = await import("../models/user.js");
 
   let staffMember = null;
   let userMember = null;
@@ -398,7 +390,7 @@ export const confirmOrder = async (orderId, userId, userRole, restaurantId) => {
   // new for w
   // Auto-create KOT for kitchen when order is confirmed (if no KOTs exist for this order)
   try {
-    const KOT = (await import('../models/KOT.js')).default;
+    const { default: KOT } = await import("../models/KOT.js");
     const existingKOTs = await KOT.find({ orderId: order._id });
 
     // Only create KOT if none exist for this order
@@ -432,7 +424,7 @@ export const confirmOrder = async (orderId, userId, userRole, restaurantId) => {
 
   // Deduct inventory stock
   try {
-    const inventoryService = await import('../services/inventoryService.js');
+    const { default: inventoryService } = await import("../services/inventoryService.js");
     await inventoryService.deductStockForOrder(order._id);
   } catch (error) {
     console.error('Failed to deduct inventory stock:', error);
@@ -457,7 +449,7 @@ export const confirmOrder = async (orderId, userId, userRole, restaurantId) => {
     .populate('customerId', 'name phone email')
 };
 // new for w
-export const getOrdersByStatus = async (status, userId, userRole, restaurantId) => {
+exports.getOrdersByStatus = async (status, userId, userRole, restaurantId) => {
   // Validate user permissions
   const allowedRoles = ['Waiter', 'Kitchen', 'Cashier', 'Manager', 'Admin', 'Owner'];
   if (!allowedRoles.includes(userRole)) {
@@ -494,7 +486,7 @@ export const getOrdersByStatus = async (status, userId, userRole, restaurantId) 
 };
 //end
 //new
-export const cancelOrder = async (orderId, reason, userId, restaurantId) => {
+exports.cancelOrder = async (orderId, reason, userId, restaurantId) => {
   const query = { _id: orderId };
   if (restaurantId) query.restaurantId = restaurantId;
 
@@ -517,7 +509,7 @@ export const cancelOrder = async (orderId, reason, userId, restaurantId) => {
   //new
   // Cancel associated KOTs
   try {
-    const KOT = (await import('../models/KOT.js')).default;
+    const { default: KOT } = await import("../models/KOT.js");
     await KOT.updateMany(
       { orderId: order._id },
       { $set: { status: 'cancelled' } }

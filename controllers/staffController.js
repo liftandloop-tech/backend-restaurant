@@ -1,16 +1,16 @@
-import {
-    registerStaff, loginStaff, getAllStaff, getStaffById,
+const { registerStaff, loginStaff, getAllStaff, getStaffById,
     updateStaff, deleteStaff, permanentlyDeleteStaff,
     changePassword, resetPassword, getStaffStats, getActiveStaffByRole
-} from '../services/staffService.js'
-import response, { sendSuccess } from '../utils/response.js'
-import { AppError } from '../utils/errorHandler.js'
-import { resolveRestaurantId } from "../utils/context.js";
+} = require("../services/staffService.js");
+const { sendSuccess } = require("../utils/response.js");
+const response = require("../utils/response.js");
+const { AppError } = require("../utils/errorHandler.js");
+const { resolveRestaurantId } = require("../utils/context.js");
 
 /**
  * register a new staff member
  */
-export const registerStaffController = async (req, res, next) => {
+exports.registerStaffController = async (req, res, next) => {
     try {
         let restaurantId = req.body.restaurantId;
 
@@ -40,7 +40,7 @@ export const registerStaffController = async (req, res, next) => {
 /**
  * staff login
  */
-export const loginStaffController = async (req, res, next) => {
+exports.loginStaffController = async (req, res, next) => {
 
     try {
         const { identifier, password } = req.body;
@@ -56,7 +56,7 @@ export const loginStaffController = async (req, res, next) => {
 /**
  * get all staff memeber with pagination and filters
  */
-export const getAllStaffController = async (req, res, next) => {
+exports.getAllStaffController = async (req, res, next) => {
     try {
         //new
         let restaurantId = await resolveRestaurantId(req.user.userId, req);
@@ -98,7 +98,7 @@ export const getAllStaffController = async (req, res, next) => {
 /**
  * get staff member by id
  */
-export const getStaffByIdController = async (req, res, next) => {
+exports.getStaffByIdController = async (req, res, next) => {
     try {
         const { id } = req.params;
         const staff = await getStaffById(id);
@@ -111,7 +111,7 @@ export const getStaffByIdController = async (req, res, next) => {
 /**
  * update staff member
  */
-export const updateStaffController = async (req, res, next) => {
+exports.updateStaffController = async (req, res, next) => {
     try {
         const { id } = req.params;
         const updateData = req.body;
@@ -125,7 +125,7 @@ export const updateStaffController = async (req, res, next) => {
 /**
  * delete staff member
  */
-export const deleteStaffController = async (req, res, next) => {
+exports.deleteStaffController = async (req, res, next) => {
     try {
         const { id } = req.params
         const deletedBy = req.user?.id;
@@ -140,7 +140,7 @@ export const deleteStaffController = async (req, res, next) => {
  * permanently delete staff member
  */
 
-export const permanentlyDeleteStaffController = async (req, res, next) => {
+exports.permanentlyDeleteStaffController = async (req, res, next) => {
     try {
         const { id } = req.params
 
@@ -154,7 +154,7 @@ export const permanentlyDeleteStaffController = async (req, res, next) => {
 /**
  * change staff password
  */
-export const changePasswordController = async (req, res, next) => {
+exports.changePasswordController = async (req, res, next) => {
     try {
         const { currentPassword, newPassword } = req.body;
         const staffId = req.user.id;
@@ -175,7 +175,7 @@ export const changePasswordController = async (req, res, next) => {
 /**
  * reset staff password (admin only)
  */
-export const resetPasswordController = async (req, res, next) => {
+exports.resetPasswordController = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { newPassword } = req.body;
@@ -198,7 +198,7 @@ export const resetPasswordController = async (req, res, next) => {
  * get staff statistics
  *  
  */
-export const getStaffStatsController = async (req, res, next) => {
+exports.getStaffStatsController = async (req, res, next) => {
     try {
         //new
         //new
@@ -224,7 +224,7 @@ export const getStaffStatsController = async (req, res, next) => {
 /**
  * get current staff profile
  */
-export const getProfileController = async (req, res, next) => {
+exports.getProfileController = async (req, res, next) => {
     try {
         const staffId = req.user.id;
         const staff = await getStaffById(staffId);
@@ -237,7 +237,7 @@ export const getProfileController = async (req, res, next) => {
 /**
  * update current staff profile
  */
-export const updateProfileController = async (req, res, next) => {
+exports.updateProfileController = async (req, res, next) => {
     try {
         const staffId = req.user.id;
         const updateData = req.body;
@@ -258,7 +258,7 @@ export const updateProfileController = async (req, res, next) => {
 /**
  * get active staff by role
  */
-export const getActiveStaffByRoleController = async (req, res, next) => {
+exports.getActiveStaffByRoleController = async (req, res, next) => {
     try {
         const { role } = req.params;
         // validate role
@@ -285,11 +285,11 @@ export const getActiveStaffByRoleController = async (req, res, next) => {
 
 // get all active staff grouped by role
 
-export const getAllActiveStaffController = async (req, res, next) => {
+exports.getAllActiveStaffController = async (req, res, next) => {
     try {
         //new
         //new
-        const Staff = (await import('../models/staff.js')).default;
+        const { default: Staff } = await import("../models/staff.js");
 
         let restaurantId = await resolveRestaurantId(req.user.userId, req);
 
@@ -346,13 +346,13 @@ export const getAllActiveStaffController = async (req, res, next) => {
 // get current user info(for debugging authentication issues)
 
 
-export const getCurrentUserController = async (req, res, next) => {
+exports.getCurrentUserController = async (req, res, next) => {
     try {
 
 
         //also check database to verify user/staff status
-        const Staff = (await import('../models/staff.js')).default;
-        const User = (await import('../models/user.js')).default;
+        const { default: Staff } = await import("../models/staff.js");
+        const { default: User } = await import("../models/user.js");
 
         let dbStatus = 'not_found';
         let staffData = null;

@@ -1,12 +1,9 @@
-import { sanitizeForPrint, sanitizeObjectForPrint } from "../utils/sanitizer.js";
-import { logger } from "../utils/logger.js";
-import { ENV } from "../config/env.js";
-import bill from "../models/bill.js";
+const { sanitizeForPrint, sanitizeObjectForPrint } = require("../utils/sanitizer.js");
+const { logger } = require("../utils/logger.js");
+const { ENV } = require("../config/env.js");
+const bill = require("../models/bill.js");
 
 
-// const {sanitizeForPrint,sanitizeObjectForPrint} = require('../utils/sanitizer.js')
-// const{logger} = require('../utils/logger.js')
-// const {ENV} = require('../config/db.js')
 
 
 // Sanitize text to prevent ESC/POS injection
@@ -18,7 +15,7 @@ const escapeForPrint = (text) => {
     .replace(/[\x1B\x1D]/g, '');
 };
 
-export class BillPrinter {
+class BillPrinter {
   constructor(printerConfig = {}) {
     this.config = {
       name: printerConfig.name || 'Bill Printer',
@@ -169,5 +166,4 @@ export class BillPrinter {
   }
 }
 
-export default BillPrinter;
-
+module.exports = BillPrinter;

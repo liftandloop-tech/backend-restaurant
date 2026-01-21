@@ -1,6 +1,5 @@
-import mongoose from "mongoose";
+const mongoose =require("mongoose");
 
-// const  mongoose=require('mongoose')
 
 const billSchema = new mongoose.Schema({
   billNumber: {
@@ -108,5 +107,5 @@ billSchema.index({ paymentMethod: 1, createdAt: -1 });
 billSchema.index({ paid: 1, createdAt: -1 });
 billSchema.index({ cashierId: 1, createdAt: -1 });
 
-export default mongoose.model("Bill", billSchema);
-//module.exports=mongoose.model('Bill,billSchama')
+// export default mongoose.model("Bill", billSchema);
+module.exports = mongoose.model("Bill",billSchema);

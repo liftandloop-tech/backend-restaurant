@@ -1,9 +1,10 @@
-import * as reportService from "../services/reportService.js";
-import { sendSuccess } from "../utils/response.js";
-import { resolveRestaurantId } from "../utils/context.js";
-import restaurant from "../models/restaurant.js";
+// import * as reportService from "../services/reportService.js";
+const reportService = require("../services/reportService.js");
+const { sendSuccess   } =require("../utils/response.js");
+const { resolveRestaurantId   }=require ("../utils/context.js");
+const restaurant =require ("../models/restaurant.js");
 
-export const exportPDF = async (req, res, next) => {
+exports. exportPDF = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req)
     const filters = {
@@ -27,7 +28,7 @@ export const exportPDF = async (req, res, next) => {
   }
 }
 
-export const getDashboardStats = async (req, res, next) => {
+exports. getDashboardStats = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req)
     const filters = {
@@ -50,7 +51,7 @@ export const getDashboardStats = async (req, res, next) => {
   }
 }
 
-export const createScheduledReport = async (req, res, next) => {
+exports. createScheduledReport = async (req, res, next) => {
   try {
     const userId = req.user.userId;
     const restaurantId = await resolveRestaurantId(userId, req);
@@ -62,7 +63,7 @@ export const createScheduledReport = async (req, res, next) => {
       ...req.body,
       restaurantId
     }
-    const restaurantService = await import('../services/restaurantService.js');
+    const { default: restaurantService } = await import("../services/restaurantService.js");
     await restaurantService.incrementRestaurantStat(restaurantId, 'totalReports');
   } catch (error) {
     console.error('Error updatting restaurant stats after report creation:', error)
@@ -70,7 +71,7 @@ export const createScheduledReport = async (req, res, next) => {
   }
 };
 
-export const getScheduledReports = async (req, res, next) => {
+exports. getScheduledReports = async (req, res, next) => {
   try {
     const userId = req.user.userId;
     const reports = await reportService.getScheduledReports(userId);
@@ -80,7 +81,7 @@ export const getScheduledReports = async (req, res, next) => {
   }
 }
 
-export const updateScheduledReport = async (req, res, next) => {
+exports. updateScheduledReport = async (req, res, next) => {
   try {
     const userId = req.user.userId;
     const reportId = req.params.id;
@@ -91,7 +92,7 @@ export const updateScheduledReport = async (req, res, next) => {
   }
 }
 
-export const deleteScheduledReport = async (req, res, next) => {
+exports. deleteScheduledReport = async (req, res, next) => {
   try {
     const userId = req.user.userId;
     const reportId = req.params.id;
@@ -101,7 +102,7 @@ export const deleteScheduledReport = async (req, res, next) => {
     next(error);
   }
 }
-export const generateAndSaveReport = async (req, res, next) => {
+exports. generateAndSaveReport = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req)
     const filters = {
@@ -126,7 +127,7 @@ export const generateAndSaveReport = async (req, res, next) => {
   }
 }
 
-export const getArchivedReports = async (req, res, next) => {
+exports. getArchivedReports = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const reports = await reportService.getSavedReports({ restaurantId })

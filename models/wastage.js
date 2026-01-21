@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const wastageSchema = new mongoose.Schema({
     inventoryItemId: {
@@ -31,6 +31,5 @@ const wastageSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
-
-export default mongoose.model("Wastage", wastageSchema);
+module.exports = mongoose.model("Wastage", wastageSchema);
 //new

@@ -1,49 +1,41 @@
-import jwt from "jsonwebtoken";
-import { ENV } from "../config/env.js";
-import User from "../models/user.js";
-import Staff from "../models/staff.js";
-//import License from "../models/license.js";
-
-// const License=require('../models/license.js')
-// const User=require('../models/user.js')
-// const{ENV}=require('../config/env.js')
-// const jwt=require('jsonwebtoken')
+const jwt = require("jsonwebtoken");
+const { ENV } = require("../config/env.js");
+const User = require("../models/user.js");
+const Staff = require("../models/staff.js");
 
 // JWT token blacklist (in production, use Redis)
 const tokenBlacklist = new Set();
-
-export const addToBlacklist = (token) => {
+exports.addToBlacklist = (token) => {
   tokenBlacklist.add(token);
-};
 
-export const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return res.status(401).json({
-      success: false,
-      message: "Unauthorized: Missing token"
-    });
-  }
 }
 
-export const authMiddleware = async (req, res, next) => {
+exports.authenticationToken = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer")) {
+    return res.status(401).json({
+      message: "Unauthorized: Missing token ",
+      success: false
+    })
+  }
+}
+exports.authMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader || !authHeader.startsWith("Bearer")) {
       return res.status(401).json({
-        success: false,
-        message: "No token provided"
-      });
+        message: "No token provided ",
+        success: false
+      })
     }
-
     const token = authHeader.split(' ')[1];
 
-    // Check blacklist
+    // check balckList
     if (tokenBlacklist.has(token)) {
       return res.status(401).json({
         success: false,
         message: "Token has been revoked"
-      });
+      })
     }
 
     const decoded = jwt.verify(token, ENV.JWT_SECRET);
@@ -53,6 +45,7 @@ export const authMiddleware = async (req, res, next) => {
     let userType = 'user';
 
     if (decoded.type === 'staff') {
+
       // This is a staff member
       userType = 'staff';
       const staff = await Staff.findById(decoded.id || decoded.userId);
@@ -62,8 +55,7 @@ export const authMiddleware = async (req, res, next) => {
           message: "Staff member not found"
         });
       }
-
-      // Check if staff is active
+      //Ckeck staff is active
       if (!staff.isActive) {
         return res.status(401).json({
           success: false,
@@ -80,15 +72,16 @@ export const authMiddleware = async (req, res, next) => {
         phoneNumber: staff.phoneNumber,
         username: staff.username,
         restaurantId: staff.restaurantId?.toString()
-      };
+      }
     } else {
-      // This is a regular user (owner/admin/manager)
+
+
       const user = await User.findById(decoded.userId).select('-password');
       if (!user) {
         return res.status(401).json({
           success: false,
           message: "User not found"
-        });
+        })
       }
 
       authenticatedUser = {
@@ -98,8 +91,7 @@ export const authMiddleware = async (req, res, next) => {
         name: user.name,
         type: 'user',
         restaurantId: user.restaurantId?.toString()
-      };
-
+      }
       // License activation check for users - commented out since License is not imported
       // if (user.licenseId) {
       //   const license = await License.findOne(user.licenseId);
@@ -115,15 +107,15 @@ export const authMiddleware = async (req, res, next) => {
 
     req.user = authenticatedUser;
     req.userType = userType;
-
     next();
-  } catch (err) {
-    if (err.name === 'TokenExpiredError') {
+  } catch (error) {
+    if (error.name === 'TokenExpiredError') {
       return res.status(401).json({
         success: false,
         message: "Token expired"
       });
     }
+
     return res.status(403).json({
       success: false,
       message: "Invalid token"
@@ -131,5 +123,7 @@ export const authMiddleware = async (req, res, next) => {
   }
 };
 
-export default authMiddleware;
-//module.exports=authMiddleware;
+
+// export default authMiddleware;
+
+// module.exports = authMiddleware;

@@ -1,11 +1,12 @@
-import * as menuService from "../services/menuService.js";
-import { sendSuccess, sendError } from "../utils/response.js";
+// import * as menuService from "../services/menuService.js";
+const menuService = require("../services/menuService.js");
+const { sendSuccess, sendError   } =require ("../utils/response.js");
 
-import { resolveRestaurantId } from "../utils/context.js";
+const { resolveRestaurantId   } =require( "../utils/context.js");
 
 
 
-export const getCategories = async (req, res, next) => {
+exports. getCategories = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
 
@@ -35,7 +36,7 @@ export const getCategories = async (req, res, next) => {
 };
 
 
-export const createCategory = async (req, res, next) => {
+exports. createCategory = async (req, res, next) => {
   try {
 
     // Ensure user has a restaurant (create one if needed) 
@@ -54,7 +55,7 @@ export const createCategory = async (req, res, next) => {
   }
 };
 
-export const updateCategory = async (req, res, next) => {
+exports. updateCategory = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const category = await menuService.updateCategory(req.params.id, req.body, restaurantId);
@@ -64,7 +65,7 @@ export const updateCategory = async (req, res, next) => {
   }
 };
 
-export const deleteCategory = async (req, res, next) => {
+exports. deleteCategory = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     await menuService.deleteCategory(req.params.id, restaurantId);
@@ -74,7 +75,7 @@ export const deleteCategory = async (req, res, next) => {
   }
 };
 
-export const getMenuItems = async (req, res, next) => {
+exports. getMenuItems = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     // clean filters
@@ -103,7 +104,7 @@ export const getMenuItems = async (req, res, next) => {
 };
 
 
-export const getMenuItemById = async (req, res, next) => {
+exports. getMenuItemById = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const item = await menuService.getMenuItemById(req.params.id, restaurantId);
@@ -113,7 +114,7 @@ export const getMenuItemById = async (req, res, next) => {
   }
 };
 
-export const createMenuItem = async (req, res, next) => {
+exports. createMenuItem = async (req, res, next) => {
   try {
     // Ensure user has a restaurant (create one if needed)
     let restaurantId = await resolveRestaurantId(req.user.userId, req);
@@ -133,7 +134,7 @@ export const createMenuItem = async (req, res, next) => {
   }
 };
 
-export const updateMenuItem = async (req, res, next) => {
+exports. updateMenuItem = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const item = await menuService.updateMenuItem(req.params.id, req.body, restaurantId);
@@ -143,7 +144,7 @@ export const updateMenuItem = async (req, res, next) => {
   }
 };
 
-export const deleteMenuItem = async (req, res, next) => {
+exports. deleteMenuItem = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     await menuService.deleteMenuItem(req.params.id, restaurantId);

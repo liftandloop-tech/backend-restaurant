@@ -1,9 +1,11 @@
-import express from 'express';
-import { verifyLicense } from "../controllers/licenseController.js";
-import { authMiddleware } from "../middlewares/auth.js";
-
+const express = require("express");
+const { verifyLicense, getLicenseToken } = require("../controllers/licenseController.js");
+const { authMiddleware } = require("../middlewares/auth.js");
 const router = express.Router();
 
- router.post('/verify', authMiddleware, verifyLicense)
+router.post('/verify', authMiddleware, verifyLicense);
+router.post('/get-token', authMiddleware, getLicenseToken);
+router.post('/generate-key', authMiddleware, require("../controllers/licenseController.js").generateLicenseKey);
 
-export default router;
+module.exports = router;
+//all new

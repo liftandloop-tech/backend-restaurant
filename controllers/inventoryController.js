@@ -1,11 +1,12 @@
-import * as inventoryService from "../services/inventoryService.js";
-import { sendSuccess } from "../utils/response.js";
+// import * as inventoryService from "../services/inventoryService.js";
+const inventoryService = require('../services/inventoryService.js')
+const { sendSuccess   }=require( "../utils/response.js");
 
 
 //new
-import { resolveRestaurantId } from "../utils/context.js";
+const { resolveRestaurantId   } =require("../utils/context.js");
 
-export const getInventoryItems = async (req, res, next) => {
+exports. getInventoryItems = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
@@ -23,7 +24,7 @@ export const getInventoryItems = async (req, res, next) => {
   }
 };
 
-export const getInventoryItemById = async (req, res, next) => {
+exports. getInventoryItemById = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const item = await inventoryService.getInventoryItemById(req.params.id, restaurantId);
@@ -33,7 +34,7 @@ export const getInventoryItemById = async (req, res, next) => {
   }
 };
 
-export const createInventoryItem = async (req, res, next) => {
+exports.createInventoryItem = async (req, res, next) => {
   try {//new
     let restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
@@ -52,7 +53,7 @@ export const createInventoryItem = async (req, res, next) => {
   }
 };
 
-export const updateInventoryItem = async (req, res, next) => {
+exports. updateInventoryItem = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const items = await inventoryService.updateInventoryItem(req.params.id, req.body, restaurantId);
@@ -62,7 +63,7 @@ export const updateInventoryItem = async (req, res, next) => {
   }
 };
 
-export const deleteInventoryItem = async (req, res, next) => {
+exports. deleteInventoryItem = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     await inventoryService.deleteInventoryItem(req.params.id, restaurantId);
@@ -72,7 +73,7 @@ export const deleteInventoryItem = async (req, res, next) => {
   }
 };
 
-export const getLowStockItems = async (req, res, next) => {
+exports. getLowStockItems = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
@@ -87,7 +88,7 @@ export const getLowStockItems = async (req, res, next) => {
 };
 
 // Vendors 
-export const getVendors = async (req, res, next) => {
+exports. getVendors = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
@@ -101,7 +102,7 @@ export const getVendors = async (req, res, next) => {
   }
 }
 
-export const createVendor = async (req, res, next) => {
+exports. createVendor = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) throw new Error("Restaurant not found");
@@ -114,7 +115,7 @@ export const createVendor = async (req, res, next) => {
 };
 
 // purchese orders
-export const getPurchaseOrders = async (req, res, next) => {
+exports. getPurchaseOrders = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
@@ -128,7 +129,7 @@ export const getPurchaseOrders = async (req, res, next) => {
   }
 };
 
-export const createPurchaseOrder = async (req, res, next) => {
+exports. createPurchaseOrder = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
@@ -142,7 +143,7 @@ export const createPurchaseOrder = async (req, res, next) => {
   }
 };
 
-export const updatePurchaseOrderStatus = async (req, res, next) => {
+exports. updatePurchaseOrderStatus = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     const po = await inventoryService.updatePurchaseOrderStatus(req.params.id, req.body.status, restaurantId);
@@ -153,7 +154,7 @@ export const updatePurchaseOrderStatus = async (req, res, next) => {
 };
 //new
 // Wastage 
-export const getWastage = async (req, res, next) => {
+exports. getWastage = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
@@ -167,7 +168,7 @@ export const getWastage = async (req, res, next) => {
   }
 };
 
-export const createWastage = async (req, res, next) => {
+exports. createWastage = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) throw new Error("Restaurant not found");

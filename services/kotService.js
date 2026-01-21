@@ -1,20 +1,12 @@
-import KOT from "../models/KOT.js";
-import Order from "../models/order.js";
-import Table from "../models/table.js";
-import { AppError } from "../utils/errorHandler.js";
+const KOT = require("../models/KOT.js");
+const Order = require("../models/order.js");
+const Table = require("../models/table.js");
+const { AppError } = require("../utils/errorHandler.js");
 
-// const KOT = require('../models/order.js')
-// const Order = require('../models/order.js')
-// const {AppError} = require('../utils/errorHandler.js')
-
-
-
-
-
-export const createKOT = async (orderId, station, userId, userRole, restaurantId) => {
+exports.createKOT = async (orderId, station, userId, userRole, restaurantId) => {
   //validate that active staff can create kots
-  const Staff = (await import('../models/staff.js')).default;
-  const User = (await import('../models/user.js')).default
+  const { default: Staff } = await import("../models/staff.js");
+  const { default: User } = await import("../models/user.js");
 
   let staffMember = null;
   let userMember = null;
@@ -82,7 +74,7 @@ export const createKOT = async (orderId, station, userId, userRole, restaurantId
 
 
 
-export const getKOTs = async (filters = {}, userRole) => {
+exports.getKOTs = async (filters = {}, userRole) => {
   // validate that kitchen staff, cashiers, waiters, and managers can view kots
   const allowedRoles = ['Kitchen', 'Cashier', 'Waiter', 'Manager', 'Admin', 'Owner'];
   if (!allowedRoles.includes(userRole)) {
@@ -125,7 +117,7 @@ export const getKOTs = async (filters = {}, userRole) => {
   return kotsWithTableStatus;
 };
 // end
-export const getKOTById = async (kotId, restaurantId) => {
+exports.getKOTById = async (kotId, restaurantId) => {
   const kot = await KOT.findById(kotId)
     .populate({          // new
       path: 'orderId',
@@ -163,7 +155,7 @@ export const getKOTById = async (kotId, restaurantId) => {
 //end
 //new for w
 
-export const updateKOTStatus = async (kotId, status, userId, userRole, restaurantId) => {
+exports.updateKOTStatus = async (kotId, status, userId, userRole, restaurantId) => {
   // validate role permission for updating kot status - allow all active staff based on their roles
   const allowedRoles = ['Kitchen', 'Waiter', 'Cashier', 'Manager', 'Admin', 'Owner'];
   if (!allowedRoles.includes(userRole)) {
@@ -186,8 +178,8 @@ export const updateKOTStatus = async (kotId, status, userId, userRole, restauran
   }
 
   // Check if user is active staff (for Staff model) or valid user (for User model)
-  const Staff = (await import('../models/staff.js')).default;
-  const User = (await import('../models/user.js')).default;
+  const { default: Staff } = await import("../models/staff.js");
+  const { default: User } = await import("../models/user.js");
 
   let staffMember = await Staff.findById(userId);
   let userMember = null;
@@ -239,7 +231,7 @@ export const updateKOTStatus = async (kotId, status, userId, userRole, restauran
   //new for w
   // Automatic Order status update based on KOT status
   try {
-    const Order = (await import('../models/order.js')).default;
+    const { default: Order } = await import("../models/order.js");
     const order = await Order.findById(kot.orderId);
     if (order) {
       let orderStatusChanged = false;
@@ -268,7 +260,7 @@ export const updateKOTStatus = async (kotId, status, userId, userRole, restauran
   return await KOT.findById(kot._id).populate('orderId').populate('assignedTo', 'name email');
 };
 //new written
-export const markKOTPrinted = async (kotId, userId, userRole, restaurantId) => {
+exports.markKOTPrinted = async (kotId, userId, userRole, restaurantId) => {
   // Validate user permissions
   const allowedRoles = ['Cashier', 'Kitchen', 'Manager', 'Admin', 'Owner'];
   if (!allowedRoles.includes(userRole)) {
@@ -305,7 +297,7 @@ export const markKOTPrinted = async (kotId, userId, userRole, restaurantId) => {
   return kot;
 };
 //end
-export const getKOTsByStatus = async (status, userRole, restaurantId) => {
+exports.getKOTsByStatus = async (status, userRole, restaurantId) => {
   // Validate user permissions
   const allowedRoles = ['Kitchen', 'Cashier', 'Manager', 'Admin', 'Owner'];
   if (!allowedRoles.includes(userRole)) {
@@ -358,7 +350,7 @@ export const getKOTsByStatus = async (status, userRole, restaurantId) => {
   return kotsWithTableStatus;
 };
 // end
-export const getKOTsForOrder = async (orderId, userRole, restaurantId) => {
+exports.getKOTsForOrder = async (orderId, userRole, restaurantId) => {
   // Validate user permissions
   const allowedRoles = ['Waiter', 'Cashier', 'Kitchen', 'Manager', 'Admin', 'Owner'];
   if (!allowedRoles.includes(userRole)) {
@@ -400,7 +392,7 @@ export const getKOTsForOrder = async (orderId, userRole, restaurantId) => {
   return kotsWithTableStatus;
 };
 
-export const updateKOTItems = async (kotId, items, userId, userRole, restaurantId) => {
+exports.updateKOTItems = async (kotId, items, userId, userRole, restaurantId) => {
   // Only kitchen staff can update KOT items
   const allowedRoles = ['Kitchen', 'Manager', 'Admin', 'Owner'];
   if (!allowedRoles.includes(userRole)) {
@@ -438,7 +430,7 @@ export const updateKOTItems = async (kotId, items, userId, userRole, restaurantI
 
   // Automatic Order status update based on KOT status
   try {
-    const Order = (await import('../models/order.js')).default;
+    const { default: Order } = await import("../models/order.js");
     const order = await Order.findById(kot.orderId);
     if (order) {
       let orderStatusChanged = false;
@@ -472,8 +464,8 @@ export const updateKOTItems = async (kotId, items, userId, userRole, restaurantI
  */
 const decrementInventoryForKOT = async (kot) => {
   try {
-    const MenuItem = (await import('../models/menu.js')).default;
-    const InventoryItem = (await import('../models/inventory.js')).default;
+    const { default: MenuItem } = await import("../models/menu.js");
+    const { default: InventoryItem } = await import("../models/inventory.js");
 
     for (const item of kot.items) {
       // Find the menu item to get ingredients

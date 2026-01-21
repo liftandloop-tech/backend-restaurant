@@ -1,36 +1,36 @@
 //new 
-  import Feedback from '../models/feedback.js'
-   
-   export const submitfeedback = async (req, res) => {
-    try{ 
-        const {customerName, rating ,comment, category,customerId} =req.body
+const Feedback = require("../models/feedback.js");
 
-        if(!customerName || !rating || comment || category || customerId){
-            return res.status(400).json({success: false, message: "Missing required fields"});
+exports.submitfeedback = async (req, res) => {
+  try {
+    const { customerName, rating, comment, category, customerId } = req.body
 
-        }
-           const feedback = new Feedback({
-            customerName,
-            rating,
-            comment,
-            category,
-            customerId
-           });
-           await feedback.save();
-           res.status(201).json({success: true, data: feedback});
+    if (!customerName || !rating || comment || category || customerId) {
+      return res.status(400).json({ success: false, message: "Missing required fields" });
 
-      } catch(error) {
-        res.status(500).json({success: false, message: error.message})
-      }
+    }
+    const feedback = new Feedback({
+      customerName,
+      rating,
+      comment,
+      category,
+      customerId
+    });
+    await feedback.save();
+    res.status(201).json({ success: true, data: feedback });
+
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
 };
 
-      export const getFeedbacks = async (req,res) => {
-        try {
-             const feedbacks = await Feedback.find().sort({ createdAt :-1})
-             res.status(200).json({success: true, data: feedbacks })
+exports.getFeedbacks = async (req, res) => {
+  try {
+    const feedbacks = await Feedback.find().sort({ createdAt: -1 })
+    res.status(200).json({ success: true, data: feedbacks })
 
-        } catch(error) {
-            res.status(500).json({success: false, message: error.message})
-        }
-   
-    };
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message })
+  }
+
+};

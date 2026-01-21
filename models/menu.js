@@ -1,6 +1,5 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
-//const mongoose=require('mongoose')
 const menuItemSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -76,5 +75,4 @@ menuItemSchema.index({ categoryId: 1, isAvailable: 1 });
 menuItemSchema.index({ name: 'text', description: 'text' });
 menuItemSchema.index({ restaurantId: 1, name: 1 }, { unique: true });
 
-export default mongoose.model("MenuItem", menuItemSchema);
-//module.exports=mongoose.model('MenuItem,menuItemSchema')
+module.exports = mongoose.model("MenuItem", menuItemSchema);

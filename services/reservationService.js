@@ -1,13 +1,8 @@
-import Reservation from "../models/reservation.js";
-import Table from "../models/table.js";
-import { AppError } from "../utils/errorHandler.js";
+const Reservation = require("../models/reservation.js");
+const Table = require("../models/table.js");
+const { AppError } = require("../utils/errorHandler.js");
 
-
-// const Reservation = require('../models/reservation.js')
-// const Table = require('../models/table.js')
-// const {AppError}= require('../utils/errorHandler.js')
-
-export const getReservations = async (filters = {}) => {
+exports.getReservations = async (filters = {}) => {
   const query = {};
   if (filters.status) query.status = filters.status;
   if (filters.reservationDate) {
@@ -20,7 +15,7 @@ export const getReservations = async (filters = {}) => {
   return await Reservation.find(query).populate('tableId').sort({ reservationDate: -1 });
 };
 //new
-export const getReservationById = async (id, restaurantId) => {
+exports.getReservationById = async (id, restaurantId) => {
   const query = { _id: id };
   if (restaurantId) query.restaurantId = restaurantId;
 
@@ -31,7 +26,7 @@ export const getReservationById = async (id, restaurantId) => {
   return reservation;
 };
 
-export const createReservation = async (data) => {
+exports.createReservation = async (data) => {
   // Check if table exists and is available in the specific restaurant
   const table = await Table.findOne({ tableNumber: data.tableNumber, restaurantId: data.restaurantId });
   if (!table) {
@@ -44,7 +39,7 @@ export const createReservation = async (data) => {
 
   // Update restaurant statistics
   try {
-    const restaurantService = await import('../services/restaurantService.js');
+    const { default: restaurantService } = await import("../services/restaurantService.js");
     await restaurantService.incrementRestaurantStat(data.restaurantId, 'totalReservations');
   } catch (error) {
     console.error('Error updating restaurant stats after reservation creation:', error);
@@ -54,7 +49,7 @@ export const createReservation = async (data) => {
 };
 // end
 //new
-export const updateReservation = async (id, data, restaurantId) => {
+exports.updateReservation = async (id, data, restaurantId) => {
   const query = { _id: id };
   if (restaurantId) query.restaurantId = restaurantId;
 
@@ -66,7 +61,7 @@ export const updateReservation = async (id, data, restaurantId) => {
   return reservation;
 };
 
-export const updateReservationStatus = async (id, status, userId,restaurantId) => {
+exports.updateReservationStatus = async (id, status, userId, restaurantId) => {
   const updateData = { status };
   if (status === 'confirmed') {
     updateData.confirmedBy = userId;
@@ -74,7 +69,7 @@ export const updateReservationStatus = async (id, status, userId,restaurantId) =
   if (status === 'cancelled') {
     updateData.cancelledAt = new Date();
   }
-//new
+  //new
   const query = { _id: id };
   if (restaurantId) query.restaurantId = restaurantId;
 
@@ -86,7 +81,7 @@ export const updateReservationStatus = async (id, status, userId,restaurantId) =
   return reservation;
 };
 //new for w
-export const deleteReservation = async (id, restaurantId) => {
+exports.deleteReservation = async (id, restaurantId) => {
   const query = { _id: id };
   if (restaurantId) query.restaurantId = restaurantId;
 
@@ -102,7 +97,7 @@ export const deleteReservation = async (id, restaurantId) => {
 
   // Update restaurant statistics
   try {
-    const restaurantService = await import('../services/restaurantService.js');
+    const { default: restaurantService } = await import("../services/restaurantService.js");
     await restaurantService.decrementRestaurantStat(itemRestaurantId, 'totalReservations');
   } catch (error) {
     console.error('Error updating restaurant stats after reservation deletion:', error);

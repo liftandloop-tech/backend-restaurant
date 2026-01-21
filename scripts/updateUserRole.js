@@ -1,8 +1,8 @@
-import mongoose from "mongoose";
-import { connectDB } from "../config/db.js";
-import "../config/env.js";
-import User from "../models/user.js";
-import { ROLES } from "../middlewares/roles.js";
+const mongoose = require("mongoose");
+const { connectDB } = require("../config/db.js");
+require("$2");
+const User = require("../models/user.js");
+const { ROLES } = require("../middlewares/roles.js");
 
 const printUsage = () => {
   console.log("\nUsage:");

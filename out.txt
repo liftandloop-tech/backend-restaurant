@@ -1,0 +1,40 @@
+﻿node : file:///C:/Users/GAUT
+AM%20MODI/Desktop/restaurent
+%20project/food%20restaurant
+/backend/routes/staff.routes
+.js:68
+At line:1 char:1
++ node server.js 2>&1 | 
+Out-File out.txt -Encoding 
+UTF8
++ ~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (file:  
+  ///C:/User...ff.routes.   
+ js:68:String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+    import Staff from 
+"../models/staff.js";
+           ^^^^^
+
+SyntaxError: Unexpected 
+identifier 'Staff'
+    at 
+compileSourceTextModule (nod
+e:internal/modules/esm/utils
+:338:16)
+    at 
+ModuleLoader.moduleStrategy 
+(node:internal/modules/esm/t
+ranslators:102:18)
+    at #translate (node:inte
+rnal/modules/esm/loader:437:
+12)
+    at ModuleLoader.loadAndT
+ranslate (node:internal/modu
+les/esm/loader:484:27)
+
+Node.js v22.12.0

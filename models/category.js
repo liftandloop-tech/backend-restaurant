@@ -1,6 +1,5 @@
-import mongoose from "mongoose";
+const mongoose= require("mongoose");
 
-//const mongoose=require('mongoose')
 const categorySchema = new mongoose.Schema({
   name: {
     type: String,
@@ -35,5 +34,5 @@ const categorySchema = new mongoose.Schema({
 categorySchema.index({ isActive: 1, displayOrder: 1 });
 categorySchema.index({ restaurantId: 1, name: 1 }, { unique: true });
 
-export default mongoose.model("Category", categorySchema);
-//module.exports=mongoose.model('Category,categorySchema')
+// export default mongoose.model("Category", categorySchema);
+module.exports = mongoose.model("Category", categorySchema);

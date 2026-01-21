@@ -1,5 +1,5 @@
-import swaggerJsdoc from "swagger-jsdoc";
-import { ENV } from "../config/env.js";
+const swaggerJsdoc = require("swagger-jsdoc");
+const { ENV } = require("../config/env.js");
 
 const options = {
   definition: {
@@ -37,7 +37,7 @@ const options = {
             _id: { type: "string" },
             name: { type: "string" },
             email: { type: "string" },
-            role: { 
+            role: {
               type: "string",
               enum: ["Owner", "Admin", "Manager", "Cashier", "Waiter", "Kitchen"]
             },
@@ -136,5 +136,6 @@ const options = {
 
 const swaggerSpec = swaggerJsdoc(options);
 
-export default swaggerSpec;
+// export default swaggerSpec;
 
+module.exports = swaggerSpec;

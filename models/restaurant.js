@@ -1,7 +1,5 @@
 // all new for w
-import mongoose from "mongoose";
-
-// const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const restaurantSchema = new mongoose.Schema({
   // Basic Restaurant Information
@@ -244,8 +242,7 @@ const restaurantSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-restaurantSchema.index({ email: 1 });
-restaurantSchema.index({ licenseKey: 1 });
+
 restaurantSchema.index({ isActive: 1 });
 restaurantSchema.index({ ownerId: 1 });
 
@@ -290,6 +287,4 @@ restaurantSchema.statics.findByOwner = function (ownerId) {
 restaurantSchema.statics.findByLicense = function (licenseKey) {
   return this.findOne({ licenseKey, isActive: true });
 };
-
-export default mongoose.model("Restaurant", restaurantSchema);
-// module.exports = mongoose.model('Restaurant', restaurantSchema);
+module.exports = mongoose.model("Restaurant", restaurantSchema);

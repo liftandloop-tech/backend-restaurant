@@ -1,9 +1,10 @@
-import * as dashboardService from "../services/dashboardService.js";
-import { sendSuccess } from "../utils/response.js";
-import { AppError } from "../utils/errorHandler.js";
-import { resolveRestaurantId } from "../utils/context.js";
+// import * as dashboardService from "../services/dashboardService.js";
+const { sendSuccess } = require("../utils/response.js");
+const dashboardService = require("../services/dashboardService.js")
+const { AppError } = require("../utils/errorHandler.js");
+const { resolveRestaurantId } = require("../utils/context.js");
 
-export const getTodaySummary = async (req, res, next) => {
+exports.getTodaySummary = async (req, res, next) => {
   try {
     const restaurantId = await resolveRestaurantId(req.user.userId, req);
     if (!restaurantId) {
@@ -22,7 +23,7 @@ export const getTodaySummary = async (req, res, next) => {
   }
 }
 
-export const getSalesStatistics = async (req, res, next) => {
+exports.getSalesStatistics = async (req, res, next) => {
   try {
     const { from, to } = req.query;
 
@@ -53,7 +54,7 @@ export const getSalesStatistics = async (req, res, next) => {
   }
 };
 
-export const getTopSellingItems = async (req, res, next) => {
+exports.getTopSellingItems = async (req, res, next) => {
   try {
     const { from, to, limit = 10 } = req.query;
     if (!from || !to) {
@@ -82,7 +83,7 @@ export const getTopSellingItems = async (req, res, next) => {
   }
 };
 
-export const getStaffPerformance = async (req, res, next) => {
+exports.getStaffPerformance = async (req, res, next) => {
   try {
     const { from, to, } = req.query;
     if (!from || !to) {
@@ -107,7 +108,7 @@ export const getStaffPerformance = async (req, res, next) => {
 };
 
 
-export const getPaymentMethodBreakdown = async (req, res, next) => {
+exports.getPaymentMethodBreakdown = async (req, res, next) => {
   try {
     const { from, to, } = req.query;
     if (!from || !to) {
@@ -133,7 +134,7 @@ export const getPaymentMethodBreakdown = async (req, res, next) => {
   }
 };
 
-export const getRecentActivity = async (req, res, next) => {
+exports.getRecentActivity = async (req, res, next) => {
   try {
     const { limit = 10 } = req.query;
     const limitNum = parseInt(limit);
@@ -152,7 +153,7 @@ export const getRecentActivity = async (req, res, next) => {
   }
 };
 
-export const getDashboardOverview = async (req, res, next) => {
+exports.getDashboardOverview = async (req, res, next) => {
   try {
     const { from, to, } = req.query;
     if (!from || !to) {

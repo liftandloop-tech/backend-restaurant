@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose =require("mongoose");
 
 const vendorSchema = new mongoose.Schema({
     name: {
@@ -40,5 +40,4 @@ const vendorSchema = new mongoose.Schema({
 });
 
 vendorSchema.index({ restaurantId: 1, name: 1 }, { unique: true });
-
-export default mongoose.model("Vendor", vendorSchema);
+module.exports = mongoose.model("Vendor", vendorSchema);

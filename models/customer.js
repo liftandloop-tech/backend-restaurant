@@ -1,6 +1,5 @@
-import mongoose from "mongoose";
+const mongoose =require("mongoose");
 
-// const mongoose=require('mongoose')
 
 const customerSchema = new mongoose.Schema({
   name: {
@@ -77,5 +76,6 @@ customerSchema.index({ restaurantId: 1, phone: 1 }, { unique: true });
 customerSchema.index({ email: 1 });
 customerSchema.index({ name: 'text' });
 
-export default mongoose.model("Customer", customerSchema);
-//module.exports=mongoose.model('Customer,customerSchema')
+// export default mongoose.model("Customer", customerSchema);
+
+module.exports = mongoose.model("Customer", customerSchema);
