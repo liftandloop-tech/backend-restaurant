@@ -4,35 +4,34 @@ const Payment = require("../models/payment.js");
 const Order = require("../models/order.js");
 const User = require("../models/user.js");
 const KOT = require("../models/KOT.js")
-/** new 
- * Get today's dashboard summary with yesterday's comparison
- */
-exports.getTodaySummary = async (restaurantId) => {
+
+ // Get today' s dadshboard summary wuth yesterday's comparison 
+ exports.getTodaySummary = async (restaurantId) => {
   const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  today.setHours(0,0,0,0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  //new for w
+ 
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
 
-  // Today's metrics helper function
+    // Today's metrics helper function
   const getMetrics = async (startDate, endDate) => {
     // Orders
     const orderQuery = {
-      createdAt: { $gte: startDate, $lt: endDate }
+      createdAt: {$gte: startDate, $lt: endDate }
     };
     if (restaurantId) orderQuery.restaurantId = restaurantId;
     const orders = await Order.countDocuments(orderQuery);
-
-    // Bills
+  
+    // Bills 
     const billQuery = {
-      createdAt: { $gte: startDate, $lt: endDate },
+      createdAt: { $gte: startDate, $lt: endDate},
       paid: true
-    };
+    }; 
     if (restaurantId) billQuery.restaurantId = restaurantId;
-    const bills = await Bill.find(billQuery);
-
+    const bills = await Bill.find(billQuery);  
+    
     const revenue = bills.reduce((sum, bill) => sum + bill.total, 0);
     const billCount = bills.length;
     const avgOrderValue = billCount > 0 ? revenue / billCount : 0;
